@@ -175,6 +175,17 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Auto-run trigger
+  useEffect(() => {
+    if (manifest && !loading) {
+      if (typeof window !== 'undefined' && sessionStorage.getItem('stackshadow_autorun') === 'true') {
+        sessionStorage.removeItem('stackshadow_autorun');
+        // Small delay so the user sees the page load before the animation starts
+        setTimeout(() => runAgents(), 500);
+      }
+    }
+  }, [manifest, loading]);
+
   const runAgents = async () => {
     if (!manifest) return;
     setRunning(true);

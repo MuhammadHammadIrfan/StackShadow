@@ -29,10 +29,24 @@ export default function AlertsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Fetch active manifest first
+    const { data: manifest } = await supabase
+      .from('manifests')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!manifest) {
+      setAlerts([]);
+      setLoading(false);
+      return;
+    }
+
+    // Only fetch alerts for the current manifest
     const { data } = await supabase
       .from('alerts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('manifest_id', manifest.id)
       .order('created_at', { ascending: false });
 
     setAlerts(data ?? []);

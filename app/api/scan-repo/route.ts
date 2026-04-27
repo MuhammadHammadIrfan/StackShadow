@@ -77,12 +77,15 @@ const FILES_TO_FETCH = [
 async function fetchRepoFiles(
   octokit: Octokit,
   owner: string,
-  repo: string
+  repo: string,
+  subpath?: string
 ): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
+  const pathPrefix = subpath ? `${subpath.replace(/\/$/, '')}/` : '';
 
   await Promise.allSettled(
-    FILES_TO_FETCH.map(async (path) => {
+    FILES_TO_FETCH.map(async (filename) => {
+      const path = `${pathPrefix}${filename}`;
       try {
         const { data } = await octokit.rest.repos.getContent({
           owner,
@@ -90,7 +93,7 @@ async function fetchRepoFiles(
           path,
         });
         if ('content' in data && data.encoding === 'base64') {
-          files[path] = Buffer.from(data.content, 'base64').toString('utf-8');
+          files[filename] = Buffer.from(data.content, 'base64').toString('utf-8');
         }
       } catch {
         // File doesn't exist — skip silently
@@ -143,15 +146,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse GitHub URL
-    const urlPattern = /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/;
+    const urlPattern = /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/[^/]+\/(.+))?$/;
     const match = repoUrl.match(urlPattern);
     if (!match) {
       return NextResponse.json(
-        { success: false, error: 'Invalid GitHub URL. Expected format: https://github.com/owner/repo' },
+        { success: false, error: 'Invalid GitHub URL. Expected format: https://github.com/owner/repo or https://github.com/owner/repo/tree/main/subfolder' },
         { status: 400 }
       );
     }
-    const [, owner, repo] = match;
+    const [, owner, repo, subpath] = match;
 
     // Get current user
     const supabase = await createClient();
@@ -165,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch files from GitHub
     const octokit = new Octokit({ auth: githubToken });
-    const rawFiles = await fetchRepoFiles(octokit, owner, repo);
+    const rawFiles = await fetchRepoFiles(octokit, owner, repo, subpath);
 
     if (Object.keys(rawFiles).length === 0) {
       return NextResponse.json(

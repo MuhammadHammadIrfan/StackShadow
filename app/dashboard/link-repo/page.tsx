@@ -30,6 +30,7 @@ export default function LinkRepoPage() {
         return;
       }
 
+      sessionStorage.setItem('stackshadow_autorun', 'true');
       router.push('/dashboard');
     } catch {
       setError('Network error. Please try again.');
