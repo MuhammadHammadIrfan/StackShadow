@@ -20,11 +20,11 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const NAV_LINKS = [
-  { href: '/dashboard', label: 'Command Center', icon: LayoutDashboard },
-  { href: '/dashboard/alerts', label: 'Intelligence Feed', icon: Bell },
-  { href: '/dashboard/todos', label: 'Task Protocol', icon: ListTodo },
-  { href: '/dashboard/calendar', label: 'Schedule Intel', icon: CalendarIcon },
-  { href: '/dashboard/link-repo', label: 'Protocol Intel', icon: LinkIcon },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/alerts', label: 'Projects Diagnosed', icon: Bell },
+  { href: '/dashboard/todos', label: 'Tasks', icon: ListTodo },
+  { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarIcon },
+  { href: '/dashboard/link-repo', label: 'Diagnose Project', icon: LinkIcon },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -111,7 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{user?.email}</p>
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Active Session</p>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Signed In</p>
             </div>
           </div>
           <Button 
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5"
           >
             <LogOut className="w-4 h-4" />
-            <span className="font-mono text-[10px] tracking-widest uppercase">Terminate</span>
+            <span className="font-mono text-[10px] tracking-widest uppercase">Sign Out</span>
           </Button>
         </div>
       </aside>

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AlertCard } from '@/components/ui/alert-card';
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -129,10 +130,10 @@ export default function AlertsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-5xl font-sans font-light tracking-tight"
           >
-            Select Target <span className="italic text-muted-foreground/60">Repository</span>
+            Select <span className="italic text-muted-foreground/60">Project</span>
           </motion.h1>
           <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mt-4">
-            Select an artifact to view its intelligence feed.
+            Choose a project to view its alerts.
           </p>
         </header>
 
@@ -191,18 +192,18 @@ export default function AlertsPage() {
         <div>
           <button onClick={() => setActiveManifest(null)} className="inline-flex items-center gap-2 text-muted-foreground hover:text-white transition-colors mb-4 group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-mono text-[10px] tracking-widest uppercase">Back to Repositories</span>
+            <span className="font-mono text-[10px] tracking-widest uppercase">Back to Projects</span>
           </button>
           <motion.h1 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-5xl font-sans font-light tracking-tight flex items-center gap-4 flex-wrap"
           >
-            Intelligence <span className="italic text-muted-foreground/60">Feed</span>
+            Alerts <span className="italic text-muted-foreground/60">Feed</span>
             <Badge variant="outline" className="font-mono text-xs font-normal border-accent/20 text-accent bg-accent/5 py-1 px-3 mt-2 md:mt-0">{activeManifest.repo_name}</Badge>
           </motion.h1>
           <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mt-4">
-            {unreadCount > 0 ? `Unread Artifacts Detected: ${unreadCount}` : 'All technical protocols cleared.'}
+            {unreadCount > 0 ? `${unreadCount} new alerts` : 'All alerts reviewed.'}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -212,7 +213,7 @@ export default function AlertsPage() {
             className="rounded-full border-white/5 bg-white/5 hover:bg-accent/10 hover:text-accent font-mono text-[10px] tracking-widest uppercase"
           >
             <CheckCheck className="w-3 h-3 mr-2" />
-            Clear All Notifications
+            Mark All Read
           </Button>
         )}
       </header>
@@ -221,7 +222,7 @@ export default function AlertsPage() {
       <div className="flex flex-col gap-8">
         <div className="flex items-center gap-4 text-muted-foreground">
           <Filter className="w-4 h-4" />
-          <h4 className="font-mono text-[10px] tracking-widest uppercase">Resolution Filters</h4>
+          <h4 className="font-mono text-[10px] tracking-widest uppercase">Filters</h4>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
@@ -253,7 +254,7 @@ export default function AlertsPage() {
                   agentFilter === agent ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
                 )}
               >
-                {agent === 'all' ? 'All Sources' : agent}
+                {agent === 'all' ? 'All' : agent === 'fuzzer' ? 'Fuzzer' : 'Scraper'}
               </button>
             ))}
           </div>
@@ -265,7 +266,7 @@ export default function AlertsPage() {
               readFilter === 'unread' ? "border-accent text-accent bg-accent/5" : "border-white/10 text-muted-foreground hover:border-white/20"
             )}
           >
-            {readFilter === 'unread' ? 'Unread Artifacts' : 'All Data'}
+            {readFilter === 'unread' ? 'Unread Only' : 'All Alerts'}
           </button>
         </div>
       </div>
@@ -278,109 +279,22 @@ export default function AlertsPage() {
             <Card className="border-dashed border-white/10 bg-transparent py-24">
               <CardContent className="flex flex-col items-center justify-center text-center">
                 <Search className="w-12 h-12 text-muted-foreground/20 mb-4" />
-                <p className="font-sans text-xl font-light text-muted-foreground italic">No matching intelligence found.</p>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50 mt-2">Try adjusting your filters or triggering a new scan.</p>
+                <p className="font-sans text-xl font-light text-muted-foreground italic">No alerts match your filters.</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50 mt-2">Try adjusting your filters or running a new diagnosis.</p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 gap-4">
-              {filtered.map((alert, i) => {
-                const isExpanded = expandedId === alert.id;
-                return (
-                  <motion.div
-                    key={alert.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
-                    <Card 
-                      className={cn(
-                        "border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group",
-                        !alert.is_read && "border-accent/30 bg-accent/5 shadow-[0_0_20px_rgba(var(--accent),0.05)]"
-                      )}
-                      onClick={() => {
-                        setExpandedId(isExpanded ? null : alert.id);
-                        if (!alert.is_read) markRead(alert.id);
-                      }}
-                    >
-                      <CardContent className="p-0">
-                        <div className="p-6 flex items-start gap-6">
-                          <div className={cn(
-                            "mt-1 w-2 h-2 rounded-full shrink-0 shadow-lg",
-                            alert.severity === 'critical' ? "bg-critical" : 
-                            alert.severity === 'high' ? "bg-high" : 
-                            alert.severity === 'medium' ? "bg-medium" : "bg-low"
-                          )} />
-                          
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-3">
-                              <h4 className="font-sans text-lg font-medium group-hover:text-accent transition-colors">{alert.title}</h4>
-                              {!alert.is_read && <Badge className="bg-accent/20 text-accent border-accent/20 text-[8px] tracking-widest px-1.5 py-0">NEW</Badge>}
-                            </div>
-                            
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                              <div className="flex items-center gap-2">
-                                {alert.agent === 'fuzzer' ? <ShieldAlert className="w-3 h-3 text-indigo-400" /> : <Zap className="w-3 h-3 text-teal-400" />}
-                                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{alert.agent} Protocol</span>
-                              </div>
-                              {alert.affected_package && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-white/20">•</span>
-                                  <span className="font-mono text-[10px] text-muted-foreground">Target: {alert.affected_package}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2">
-                                <span className="text-white/20">•</span>
-                                <span className="font-mono text-[10px] text-muted-foreground">{timeAgo(alert.created_at)}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            {alert.source_url && (
-                              <a 
-                                href={alert.source_url} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                onClick={e => e.stopPropagation()}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                            )}
-                            <div className="p-2 text-muted-foreground group-hover:text-white transition-colors">
-                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                            </div>
-                          </div>
-                        </div>
-
-                        <AnimatePresence>
-                          {isExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="p-6 pt-0 ml-8 mr-8 border-t border-white/5 mt-0">
-                                <div className="bg-black/40 rounded-xl p-6 font-mono text-xs leading-relaxed text-muted-foreground/80 border border-white/5">
-                                  <p className="mb-4 text-white/90">{alert.description}</p>
-                                  <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/5">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] uppercase tracking-widest opacity-50">Hash Index:</span>
-                                      <span className="text-[10px] text-accent/70">{alert.id.slice(0, 8)}...</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+              {filtered.map((alert, i) => (
+                <motion.div
+                  key={alert.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <AlertCard alert={alert} onRead={markRead} />
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
