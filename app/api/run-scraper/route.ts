@@ -76,23 +76,20 @@ async function tavilySearch(query: string): Promise<TavilyResult[]> {
   }
 }
 
-async function analyzeWithGemini(
+async function analyzeBatchWithGemini(
   genai: GoogleGenAI,
-  subject: string,
-  searchResults: TavilyResult[],
-  type: 'ai_model' | 'framework'
-): Promise<Array<{ title: string; description: string; severity: AlertSeverity; source_url: string }>> {
-  if (searchResults.length === 0) return [];
-
-  const typeContext = type === 'ai_model'
-    ? 'pricing changes, model deprecations, new cheaper/better alternatives, API breaking changes'
-    : 'new major releases, breaking changes, deprecation notices, security advisories';
+  allResults: Array<{ subject: string; type: 'ai_model' | 'framework'; results: TavilyResult[] }>
+): Promise<Array<{ title: string; description: string; severity: AlertSeverity; source_url: string; affected_package: string }>> {
+  if (allResults.length === 0) return [];
 
   try {
-    const prompt = `You are a technical intelligence analyst for a startup CTO. Analyze these search results about "${subject}" and identify important alerts related to: ${typeContext}.
+    const prompt = `You are a technical intelligence analyst for a startup CTO. Analyze the following batched search results for several technologies and identify important alerts.
 
-SEARCH RESULTS:
-${JSON.stringify(searchResults, null, 2)}
+For AI Models, look for: pricing changes, model deprecations, new cheaper/better alternatives, API breaking changes.
+For Frameworks, look for: new major releases, breaking changes, deprecation notices, security advisories.
+
+SEARCH RESULTS BATCH:
+${JSON.stringify(allResults, null, 2)}
 
 Identify any critical framework deprecations, major version releases, pricing changes, or architectural shifts.
 If nothing is urgent or significant, return an empty array [].
@@ -102,14 +99,16 @@ Return ONLY a JSON array of objects matching this schema exactly:
   "title": "Short urgent title (e.g., Next.js 16 Released)",
   "description": "2-3 sentences explaining the impact on the founder",
   "severity": "critical" | "high" | "medium" | "low" | "info",
-  "source_url": "URL from the search results"
+  "source_url": "URL from the search results",
+  "affected_package": "The exact name of the subject (e.g., 'Next.js' or 'OpenAI gpt-4')"
 }]`;
     const result = await generateWithFallback(genai, prompt);
     const text = result.text ?? '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return [];
     return JSON.parse(jsonMatch[0]);
-  } catch {
+  } catch (e) {
+    console.error('[run-scraper] Batch Gemini analysis failed:', e);
     return [];
   }
 }
@@ -146,26 +145,32 @@ export async function POST(request: NextRequest) {
       const newAlerts = [];
 
       const aiModels: AIModel[] = parsedManifest?.ai_models ?? [];
+      const frameworks: TechEntry[] = parsedManifest?.frameworks ?? [];
+      
+      const searchPromises: Promise<{subject: string; type: 'ai_model' | 'framework'; results: TavilyResult[]}>[] = [];
+
       for (const model of aiModels.slice(0, 5)) {
         const subject = `${model.provider} ${model.model}`;
         const queries = [`${model.provider} ${model.model} pricing change 2025`, `${model.provider} ${model.model} deprecated alternative`];
-        const results = (await Promise.all(queries.map(tavilySearch))).flat();
-        const alerts = await analyzeWithGemini(genai, subject, results, 'ai_model');
-        
-        for (const alert of alerts) {
-          newAlerts.push({ ...alert, manifest_id: manifest.id, user_id: user.id, agent: 'scraper', affected_package: subject, is_read: false });
-        }
+        searchPromises.push(
+          Promise.all(queries.map(tavilySearch))
+          .then(res => ({ subject, type: 'ai_model' as const, results: res.flat() }))
+        );
       }
 
-      const frameworks: TechEntry[] = parsedManifest?.frameworks ?? [];
       for (const fw of frameworks.slice(0, 5)) {
         const queries = [`${fw.name} new release breaking changes 2025`, `${fw.name} deprecation notice`];
-        const results = (await Promise.all(queries.map(tavilySearch))).flat();
-        const alerts = await analyzeWithGemini(genai, fw.name, results, 'framework');
+        searchPromises.push(
+          Promise.all(queries.map(tavilySearch))
+          .then(res => ({ subject: fw.name, type: 'framework' as const, results: res.flat() }))
+        );
+      }
 
-        for (const alert of alerts) {
-          newAlerts.push({ ...alert, manifest_id: manifest.id, user_id: user.id, agent: 'scraper', affected_package: fw.name, is_read: false });
-        }
+      const allSearchResults = await Promise.all(searchPromises);
+      const alerts = await analyzeBatchWithGemini(genai, allSearchResults);
+
+      for (const alert of alerts) {
+        newAlerts.push({ ...alert, manifest_id: manifest.id, user_id: user.id, agent: 'scraper', is_read: false });
       }
 
       // Delete old scraper alerts for this manifest

@@ -1,8 +1,27 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Bell, 
+  CheckCheck, 
+  ChevronDown, 
+  ChevronUp, 
+  ExternalLink, 
+  Filter, 
+  Zap, 
+  ShieldAlert,
+  Search,
+  ArrowLeft
+} from 'lucide-react';
+import Link from 'next/link';
 import type { Alert, AlertSeverity, AgentType } from '@/types';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -29,7 +48,6 @@ export default function AlertsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Fetch active manifest first
     const { data: manifest } = await supabase
       .from('manifests')
       .select('id')
@@ -42,7 +60,6 @@ export default function AlertsPage() {
       return;
     }
 
-    // Only fetch alerts for the current manifest
     const { data } = await supabase
       .from('alerts')
       .select('*')
@@ -86,193 +103,227 @@ export default function AlertsPage() {
     .sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
 
   const unreadCount = alerts.filter(a => !a.is_read).length;
-
-  // Severity counts for filter buttons
   const sevCounts = alerts.reduce<Record<string, number>>((acc, a) => {
     acc[a.severity] = (acc[a.severity] ?? 0) + 1;
     return acc;
   }, {});
 
-  const FilterBtn = ({
-    label, value, active, count, color
-  }: { label: string; value: string; active: boolean; count?: number; color?: string }) => (
-    <button
-      className={`btn btn-sm ${active ? 'btn-primary' : 'btn-secondary'}`}
-      style={active && color ? { background: color, boxShadow: `0 4px 15px ${color}55` } : undefined}
-      onClick={() => {
-        /* handled by parent */
-      }}
-    >
-      {label}
-      {count !== undefined && (
-        <span style={{
-          background: active ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-          borderRadius: '100px', padding: '0.05rem 0.35rem', fontSize: '0.65rem', fontWeight: 700,
-        }}>
-          {count}
-        </span>
-      )}
-    </button>
-  );
+  if (loading) {
+    return (
+      <div className="p-8 md:p-12 space-y-8 min-h-screen">
+        <Skeleton className="h-10 w-64" />
+        <div className="flex gap-4"><Skeleton className="h-8 w-24" /><Skeleton className="h-8 w-24" /></div>
+        <div className="space-y-4">{[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <header className="dashboard-header">
+    <div className="p-8 md:p-12 space-y-12 min-h-screen selection:bg-accent selection:text-white">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Intelligence Alerts</h1>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {unreadCount > 0 ? `${unreadCount} unread alert${unreadCount !== 1 ? 's' : ''}` : 'All caught up'}
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-muted-foreground hover:text-white transition-colors mb-4 group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-mono text-[10px] tracking-widest uppercase">Command Center</span>
+          </Link>
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl md:text-5xl font-sans font-light tracking-tight"
+          >
+            Intelligence <span className="italic text-muted-foreground/60">Feed</span>
+          </motion.h1>
+          <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mt-2">
+            {unreadCount > 0 ? `Unread Artifacts Detected: ${unreadCount}` : 'All technical protocols cleared.'}
           </p>
         </div>
         {unreadCount > 0 && (
-          <button className="btn btn-secondary btn-sm" onClick={markAllRead}>
-            ✓ Mark all read
-          </button>
+          <Button 
+            variant="outline" 
+            onClick={markAllRead}
+            className="rounded-full border-white/5 bg-white/5 hover:bg-accent/10 hover:text-accent font-mono text-[10px] tracking-widest uppercase"
+          >
+            <CheckCheck className="w-3 h-3 mr-2" />
+            Clear All Notifications
+          </Button>
         )}
       </header>
 
-      <main className="dashboard-content">
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-          {/* Severity filters */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginRight: '0.5rem' }}>
-            {(['all', 'critical', 'high', 'medium', 'low', 'info'] as const).map(sev => {
-              const colors: Record<string, string> = {
-                critical: 'var(--critical)', high: 'var(--high)',
-                medium: 'var(--medium)', low: 'var(--low)', info: 'var(--info)',
-              };
-              const count = sev === 'all' ? alerts.length : (sevCounts[sev] ?? 0);
-              return (
-                <button
-                  key={sev}
-                  id={`filter-severity-${sev}`}
-                  className={`btn btn-sm ${filter === sev ? 'btn-primary' : 'btn-secondary'}`}
-                  style={filter === sev && sev !== 'all' ? { background: colors[sev], boxShadow: `0 4px 12px ${colors[sev]}44` } : undefined}
-                  onClick={() => setFilter(sev)}
-                >
-                  {sev.charAt(0).toUpperCase() + sev.slice(1)}
-                  <span style={{
-                    background: filter === sev ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                    borderRadius: '100px', padding: '0.05rem 0.35rem', fontSize: '0.65rem', fontWeight: 700,
-                  }}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+      {/* Filters */}
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center gap-4 text-muted-foreground">
+          <Filter className="w-4 h-4" />
+          <h4 className="font-mono text-[10px] tracking-widest uppercase">Resolution Filters</h4>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+            {(['all', 'critical', 'high', 'medium', 'low', 'info'] as const).map(sev => (
+              <button
+                key={sev}
+                onClick={() => setFilter(sev)}
+                className={cn(
+                  "px-4 py-2 rounded-lg font-mono text-[10px] tracking-widest uppercase transition-all",
+                  filter === sev 
+                    ? (sev === 'all' ? "bg-accent text-white" : `bg-white/10 text-white shadow-xl`) 
+                    : "text-muted-foreground hover:text-white"
+                )}
+                style={filter === sev && sev !== 'all' ? { borderBottom: `2px solid var(--${sev})` } : {}}
+              >
+                {sev} <span className="opacity-40 ml-1">{sev === 'all' ? alerts.length : (sevCounts[sev] ?? 0)}</span>
+              </button>
+            ))}
           </div>
 
-          <div style={{ width: '1px', background: 'var(--border)', margin: '0 0.25rem' }} />
-
-          {/* Agent filter */}
-          {(['all', 'fuzzer', 'scraper'] as const).map(agent => (
-            <button
-              key={agent}
-              id={`filter-agent-${agent}`}
-              className={`btn btn-sm ${agentFilter === agent ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setAgentFilter(agent)}
-            >
-              {agent === 'all' ? '🤖 All Agents' : agent === 'fuzzer' ? '🐛 Fuzzer' : '📡 Scraper'}
-            </button>
-          ))}
-
-          <div style={{ width: '1px', background: 'var(--border)', margin: '0 0.25rem' }} />
+          <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+            {(['all', 'fuzzer', 'scraper'] as const).map(agent => (
+              <button
+                key={agent}
+                onClick={() => setAgentFilter(agent)}
+                className={cn(
+                  "px-4 py-2 rounded-lg font-mono text-[10px] tracking-widest uppercase transition-all",
+                  agentFilter === agent ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
+                )}
+              >
+                {agent === 'all' ? 'All Sources' : agent}
+              </button>
+            ))}
+          </div>
 
           <button
-            id="filter-unread"
-            className={`btn btn-sm ${readFilter === 'unread' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setReadFilter(readFilter === 'unread' ? 'all' : 'unread')}
+            className={cn(
+              "px-4 py-3 rounded-xl font-mono text-[10px] tracking-widest uppercase border transition-all",
+              readFilter === 'unread' ? "border-accent text-accent bg-accent/5" : "border-white/10 text-muted-foreground hover:border-white/20"
+            )}
           >
-            Unread only
+            {readFilter === 'unread' ? 'Unread Artifacts' : 'All Data'}
           </button>
         </div>
+      </div>
 
-        {/* Alert list */}
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '4rem' }}>
-            <div className="spinner spinner-lg" style={{ color: 'var(--accent)' }} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="card">
-            <div className="empty-state">
-              <div className="empty-state-icon">🔎</div>
-              <h2 className="empty-state-title">No alerts match your filters</h2>
-              <p className="empty-state-desc">Try adjusting the filters or run the agents to generate new intelligence.</p>
-            </div>
-          </div>
+      {/* Alert Feed */}
+      <div className="space-y-4">
+        {filtered.length === 0 ? (
+          <Card className="border-dashed border-white/10 bg-transparent py-24">
+            <CardContent className="flex flex-col items-center justify-center text-center">
+              <Search className="w-12 h-12 text-muted-foreground/20 mb-4" />
+              <p className="font-sans text-xl font-light text-muted-foreground italic">No matching intelligence found.</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50 mt-2">Try adjusting your filters or triggering a new scan.</p>
+            </CardContent>
+          </Card>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {filtered.map(alert => {
+          <div className="grid grid-cols-1 gap-4">
+            {filtered.map((alert, i) => {
               const isExpanded = expandedId === alert.id;
+              const severity = alert.severity as keyof typeof SEVERITY_ORDER;
               return (
-                <div
+                <motion.div
                   key={alert.id}
-                  className={`alert-row ${!alert.is_read ? 'unread' : ''}`}
-                  onClick={() => {
-                    setExpandedId(isExpanded ? null : alert.id);
-                    if (!alert.is_read) markRead(alert.id);
-                  }}
-                  style={{ flexDirection: 'column', cursor: 'pointer' }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
                 >
-                  {/* Top row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '1rem', alignItems: 'center', width: '100%' }}>
-                    <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
-                    <div>
-                      <div className="alert-row-title">{alert.title}</div>
-                      <div className="alert-row-meta">
-                        <span className={`badge badge-${alert.agent}`}>{alert.agent}</span>
-                        {alert.affected_package && <span className="alert-row-pkg">{alert.affected_package}</span>}
-                        <span className="alert-row-time">{timeAgo(alert.created_at)}</span>
-                        {!alert.is_read && <span className="badge badge-info">NEW</span>}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                      {alert.source_url && (
-                        <a
-                          href={alert.source_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-ghost btn-sm"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          ↗ Source
-                        </a>
-                      )}
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                        {isExpanded ? '▲' : '▼'}
-                      </span>
-                    </div>
-                  </div>
+                  <Card 
+                    className={cn(
+                      "border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group",
+                      !alert.is_read && "border-accent/30 bg-accent/5 shadow-[0_0_20px_rgba(var(--accent),0.05)]"
+                    )}
+                    onClick={() => {
+                      setExpandedId(isExpanded ? null : alert.id);
+                      if (!alert.is_read) markRead(alert.id);
+                    }}
+                  >
+                    <CardContent className="p-0">
+                      <div className="p-6 flex items-start gap-6">
+                        <div className={cn(
+                          "mt-1 w-2 h-2 rounded-full shrink-0 shadow-lg",
+                          alert.severity === 'critical' ? "bg-critical" : 
+                          alert.severity === 'high' ? "bg-high" : 
+                          alert.severity === 'medium' ? "bg-medium" : "bg-low"
+                        )} />
+                        
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-sans text-lg font-medium group-hover:text-accent transition-colors">{alert.title}</h4>
+                            {!alert.is_read && <Badge className="bg-accent/20 text-accent border-accent/20 text-[8px] tracking-widest px-1.5 py-0">NEW</Badge>}
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <div className="flex items-center gap-2">
+                              {alert.agent === 'fuzzer' ? <ShieldAlert className="w-3 h-3 text-indigo-400" /> : <Zap className="w-3 h-3 text-teal-400" />}
+                              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{alert.agent} Protocol</span>
+                            </div>
+                            {alert.affected_package && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-white/20">•</span>
+                                <span className="font-mono text-[10px] text-muted-foreground">Target: {alert.affected_package}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-white/20">•</span>
+                              <span className="font-mono text-[10px] text-muted-foreground">{timeAgo(alert.created_at)}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                  {/* Expanded description */}
-                  {isExpanded && (
-                    <div
-                      style={{
-                        marginTop: '0.75rem',
-                        paddingTop: '0.75rem',
-                        borderTop: '1px solid var(--border)',
-                        fontSize: '0.875rem',
-                        color: 'var(--text-secondary)',
-                        lineHeight: '1.7',
-                        width: '100%',
-                      }}
-                    >
-                      {alert.description}
-                    </div>
-                  )}
-                </div>
+                        <div className="flex items-center gap-4">
+                          {alert.source_url && (
+                            <a 
+                              href={alert.source_url} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
+                          <div className="p-2 text-muted-foreground group-hover:text-white transition-colors">
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="p-6 pt-0 ml-8 mr-8 border-t border-white/5 mt-0">
+                              <div className="bg-black/40 rounded-xl p-6 font-mono text-xs leading-relaxed text-muted-foreground/80 border border-white/5">
+                                <p className="mb-4 text-white/90">{alert.description}</p>
+                                <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] uppercase tracking-widest opacity-50">Hash Index:</span>
+                                    <span className="text-[10px] text-accent/70">{alert.id.slice(0, 8)}...</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>
         )}
+      </div>
 
-        {/* Summary footer */}
-        {filtered.length > 0 && (
-          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Showing {filtered.length} of {alerts.length} total alerts
-          </div>
-        )}
-      </main>
-    </>
+      {filtered.length > 0 && (
+        <footer className="pt-12 pb-8 text-center border-t border-white/5">
+          <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase opacity-40">
+            Synthesized Protocol Scan Complete • {filtered.length} of {alerts.length} Objects Displayed
+          </p>
+        </footer>
+      )}
+    </div>
   );
 }

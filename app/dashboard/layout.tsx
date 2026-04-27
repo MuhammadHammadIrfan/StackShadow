@@ -3,13 +3,28 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { 
+  LayoutDashboard, 
+  Bell, 
+  Link as LinkIcon, 
+  LogOut, 
+  User as UserIcon,
+  ListTodo,
+  Calendar as CalendarIcon,
+  Hexagon
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const NAV_LINKS = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/dashboard/alerts', label: 'Alerts', icon: '🚨' },
-  { href: '/dashboard/link-repo', label: 'Link Repo', icon: '🔗' },
+  { href: '/dashboard', label: 'Command Center', icon: LayoutDashboard },
+  { href: '/dashboard/alerts', label: 'Intelligence Feed', icon: Bell },
+  { href: '/dashboard/todos', label: 'Task Protocol', icon: ListTodo },
+  { href: '/dashboard/calendar', label: 'Schedule Intel', icon: CalendarIcon },
+  { href: '/dashboard/link-repo', label: 'Protocol Intel', icon: LinkIcon },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -35,64 +50,88 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
-    : '?';
+    : '??';
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div className="spinner spinner-lg" style={{ color: 'var(--accent)' }} />
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex' }}>
+    <div className="flex min-h-screen bg-[#050505] text-white font-sans overflow-hidden">
       {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">🛡️</div>
-          <span className="sidebar-logo-text">StackShadow</span>
+      <aside className="w-72 border-r border-white/5 bg-[#0a0a0a]/50 backdrop-blur-xl flex flex-col p-6 fixed h-screen z-50">
+        <div className="flex items-center gap-3 px-2 mb-12">
+          <div className="relative">
+            <Hexagon className="w-8 h-8 text-accent fill-accent/10" />
+            <div className="absolute inset-0 bg-accent/20 blur-lg rounded-full" />
+          </div>
+          <span className="font-sans text-lg font-light tracking-tight">Stack<span className="italic opacity-50">Shadow</span></span>
         </div>
 
-        <nav className="sidebar-nav">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`sidebar-link ${pathname === link.href ? 'active' : ''}`}
-            >
-              <span className="sidebar-link-icon">{link.icon}</span>
-              {link.label}
-            </Link>
-          ))}
+        <nav className="flex-1 space-y-2">
+          {NAV_LINKS.map((link) => {
+            const Icon = link.icon;
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
+                  isActive 
+                    ? "bg-accent/10 text-accent" 
+                    : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <Icon className={cn(
+                  "w-4 h-4 transition-transform duration-500",
+                  isActive ? "scale-110" : "group-hover:scale-110"
+                )} />
+                <span className="font-mono text-[10px] tracking-widest uppercase">{link.label}</span>
+                {isActive && (
+                  <motion.div 
+                    layoutId="active-nav"
+                    className="ml-auto w-1 h-1 rounded-full bg-accent"
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* User section at bottom */}
-        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem' }}>
-            <div className="avatar">{initials}</div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user?.email ?? 'User'}
-              </div>
+        {/* User profile */}
+        <div className="mt-auto pt-6 border-t border-white/5">
+          <div className="flex items-center gap-4 p-2 mb-4">
+            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-mono text-xs">
+              {initials}
             </div>
-            <button
-              id="sign-out-btn"
-              className="btn btn-ghost btn-sm"
-              onClick={handleSignOut}
-              title="Sign out"
-              style={{ padding: '0.3rem 0.5rem' }}
-            >
-              ↩
-            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{user?.email}</p>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Active Session</p>
+            </div>
           </div>
+          <Button 
+            variant="ghost" 
+            onClick={handleSignOut}
+            className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="font-mono text-[10px] tracking-widest uppercase">Terminate</span>
+          </Button>
         </div>
       </aside>
 
-      {/* Main area */}
-      <div className="dashboard-wrapper" style={{ flex: 1 }}>
-        {children}
-      </div>
+      {/* Main Content Area */}
+      <main className="flex-1 ml-72 min-h-screen overflow-y-auto">
+        <div className="noise-overlay" />
+        <div className="relative z-10">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
