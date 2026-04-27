@@ -2,18 +2,25 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { AgentRun } from '@/types';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const manifest_id = searchParams.get('manifest_id');
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: manifestRow } = await supabase
-      .from('manifests')
-      .select('id')
-      .eq('user_id', user.id)
+    let manifestQuery = supabase.from('manifests').select('id').eq('user_id', user.id);
+    if (manifest_id) {
+      manifestQuery = manifestQuery.eq('id', manifest_id);
+    }
+
+    const { data: manifestRow } = await manifestQuery
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single<{ id: string }>();
 
     if (!manifestRow) {

@@ -1,27 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
+import { NextRequest } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 import { tavily } from '@tavily/core';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import type { AIModel, TechEntry, AlertSeverity, Manifest } from '@/types';
 
-async function generateWithFallback(genai: GoogleGenAI, prompt: string): Promise<{ text?: string }> {
-  const models = ['gemini-2.5-flash'];
-  let lastError;
-  
-  for (const model of models) {
+// ── SSE helper ──────────────────────────────────────────────────────────────
+function encodeEvent(data: string) {
+  return new TextEncoder().encode(`data: ${JSON.stringify({ log: data })}\n\n`);
+}
+
+function sseEnd(controller: ReadableStreamDefaultController) {
+  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+  controller.close();
+}
+
+// ── LLM fallback chain ───────────────────────────────────────────────────────
+async function generateWithFallback(
+  genai: GoogleGenAI,
+  prompt: string,
+  log: (msg: string) => void,
+): Promise<string> {
+  const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+
+  for (const model of geminiModels) {
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const result = await genai.models.generateContent({
-          model,
-          contents: prompt,
-        });
-        return result;
+        log(`[Gemini] Trying ${model} (attempt ${attempt}/2)...`);
+        const result = await genai.models.generateContent({ model, contents: prompt });
+        const text = result.text ?? '';
+        log(`[Gemini] ✓ ${model} responded (${text.length} chars)`);
+        return text;
       } catch (err: any) {
-        lastError = err;
-        console.warn(`[run-scraper] Model ${model} (Attempt ${attempt}/2) failed:`, err?.message || err);
-        
-        if (err?.status === 429 || err?.status === 503 || err?.message?.includes('demand') || err?.message?.includes('Quota')) {
-          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+        log(`[Gemini] ✗ ${model} failed: ${err?.message?.slice(0, 80)}`);
+        if (err?.status === 404) break;
+        if (err?.status === 429 || err?.status === 503) {
+          await new Promise(r => setTimeout(r, attempt * 1000));
           continue;
         }
         break;
@@ -29,33 +42,38 @@ async function generateWithFallback(genai: GoogleGenAI, prompt: string): Promise
     }
   }
 
-  // Fallback to Groq if provided
+  // Groq fallback
   if (process.env.GROQ_API_KEY) {
-    console.log('[run-scraper] Falling back to Groq API...');
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { text: data.choices[0]?.message?.content ?? '' };
+    const groqModels = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'qwen/qwen3-32b', 'meta-llama/llama-4-scout-17b-16e-instruct'];
+    for (const gModel of groqModels) {
+      log(`[Groq] Falling back to ${gModel}...`);
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: gModel, messages: [{ role: 'user', content: prompt }] }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.choices[0]?.message?.content ?? '';
+          log(`[Groq] ✓ ${gModel} responded (${text.length} chars)`);
+          return text;
+        } else {
+          const errText = await res.text();
+          log(`[Groq] ✗ ${gModel} failed: ${errText.slice(0, 100)}`);
+          if (res.status === 429) continue;
+          break;
+        }
+      } catch (e: any) {
+        log(`[Groq] ✗ ${gModel} error: ${e?.message?.slice(0, 80)}`);
       }
-    } catch (e) {
-      console.warn('[run-scraper] Groq request failed:', e);
     }
   }
 
-  throw lastError;
+  throw new Error('All LLM providers exhausted');
 }
 
+// ── Tavily search ──────────────────────────────────────────────────────────
 interface TavilyResult {
   title: string;
   url: string;
@@ -66,32 +84,147 @@ interface TavilyResult {
 async function tavilySearch(query: string): Promise<TavilyResult[]> {
   try {
     const client = tavily({ apiKey: process.env.TAVILY_API_KEY! });
-    const response = await client.search(query, {
-      searchDepth: 'basic',
-      maxResults: 5,
-    });
+    const response = await client.search(query, { searchDepth: 'basic', maxResults: 5 });
     return (response.results ?? []) as TavilyResult[];
   } catch {
     return [];
   }
 }
 
-async function analyzeBatchWithGemini(
-  genai: GoogleGenAI,
-  allResults: Array<{ subject: string; type: 'ai_model' | 'framework'; results: TavilyResult[] }>
-): Promise<Array<{ title: string; description: string; severity: AlertSeverity; source_url: string; affected_package: string }>> {
-  if (allResults.length === 0) return [];
+// ── Main handler ─────────────────────────────────────────────────────────────
+export async function POST(request: NextRequest) {
+  let log: (msg: string) => void = () => {};
 
-  try {
-    const prompt = `You are a technical intelligence analyst for a startup CTO. Analyze the following batched search results for several technologies and identify important alerts.
+  const stream = new ReadableStream({
+    async start(controller) {
+      log = (msg: string) => {
+        try { controller.enqueue(encodeEvent(msg)); } catch {}
+      };
 
-For AI Models, look for: pricing changes, model deprecations, new cheaper/better alternatives, API breaking changes.
-For Frameworks, look for: new major releases, breaking changes, deprecation notices, security advisories.
+      try {
+        let manifest_id: string | undefined;
+        try {
+          const body = await request.json();
+          manifest_id = body.manifest_id;
+        } catch {}
+
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          log('[System] ✗ Unauthorized');
+          sseEnd(controller);
+          return;
+        }
+
+        let manifestQuery = supabase.from('manifests').select('*').eq('user_id', user.id);
+        if (manifest_id) manifestQuery = manifestQuery.eq('id', manifest_id);
+        const { data: manifest } = await manifestQuery.order('created_at', { ascending: false }).limit(1).single<Manifest>();
+
+        if (!manifest || !manifest.parsed_manifest) {
+          log('[System] ✗ No manifest found');
+          sseEnd(controller);
+          return;
+        }
+
+        log(`[System] ► Scraper Agent started`);
+        log(`[System] Target: ${manifest.repo_name}`);
+
+        const { data: agentRun, error: runErr } = await supabase
+          .from('agent_runs').insert({ manifest_id: manifest.id, agent: 'scraper', status: 'running' }).select().single();
+        if (runErr || !agentRun) { log('[System] ✗ Failed to create agent run'); sseEnd(controller); return; }
+
+        try {
+          const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+          const parsedManifest = manifest.parsed_manifest;
+
+          const aiModels: AIModel[] = parsedManifest?.ai_models ?? [];
+          const frameworks: TechEntry[] = parsedManifest?.frameworks ?? [];
+          const languages: string[] = parsedManifest?.languages ?? [];
+          const databases: string[] = parsedManifest?.databases ?? [];
+          const infrastructure: string[] = parsedManifest?.infrastructure ?? [];
+          const keyDeps: TechEntry[] = parsedManifest?.key_dependencies ?? [];
+
+          // Build comprehensive search subjects with fallback to languages/databases/infra
+          const subjects: Array<{ name: string; type: string; queries: string[] }> = [];
+
+          for (const m of aiModels.slice(0, 4)) {
+            const name = `${m.provider} ${m.model}`;
+            subjects.push({ name, type: 'ai_model', queries: [
+              `${name} pricing change 2025`,
+              `${name} deprecated alternative`,
+            ]});
+          }
+
+          for (const fw of frameworks.slice(0, 4)) {
+            subjects.push({ name: fw.name, type: 'framework', queries: [
+              `${fw.name} new release breaking changes 2025`,
+              `${fw.name} deprecation notice`,
+            ]});
+          }
+
+          // Fallback: if no ai_models/frameworks, search top deps, languages, dbs
+          if (subjects.length === 0) {
+            for (const dep of keyDeps.slice(0, 4)) {
+              subjects.push({ name: dep.name, type: 'dependency', queries: [
+                `${dep.name} security advisory 2025`,
+                `${dep.name} breaking change deprecated`,
+              ]});
+            }
+            for (const lang of languages.slice(0, 2)) {
+              subjects.push({ name: lang, type: 'language', queries: [
+                `${lang} new features deprecation 2025`,
+              ]});
+            }
+            for (const db of databases.slice(0, 2)) {
+              subjects.push({ name: db, type: 'database', queries: [
+                `${db} pricing change deprecation 2025`,
+              ]});
+            }
+            for (const infra of infrastructure.slice(0, 2)) {
+              subjects.push({ name: infra, type: 'infrastructure', queries: [
+                `${infra} breaking change pricing 2025`,
+              ]});
+            }
+          }
+
+          if (subjects.length === 0) {
+            log(`[Scraper] No searchable subjects found in manifest`);
+          } else {
+            log(`[Scraper] Identified ${subjects.length} subjects to monitor: ${subjects.map(s => s.name).join(', ')}`);
+          }
+
+          log(`[Scraper] Querying Tavily web intelligence...`);
+          const allSearchResults: Array<{ subject: string; type: string; results: TavilyResult[] }> = [];
+
+          for (const subject of subjects) {
+            const resultGroups = await Promise.all(subject.queries.map(tavilySearch));
+            const results = resultGroups.flat().filter(r => r.score > 0.3);
+            log(`[Scraper] ${subject.name}: ${results.length} web results found`);
+            allSearchResults.push({ subject: subject.name, type: subject.type, results });
+          }
+
+          const hasResults = allSearchResults.some(r => r.results.length > 0);
+          if (!hasResults) {
+            log(`[Scraper] No web intelligence found. Nothing to analyze.`);
+            await supabase.from('alerts').delete().eq('manifest_id', manifest.id).eq('agent', 'scraper');
+            await supabase.from('agent_runs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
+            log(`[System] ✓ Scraper complete — 0 alerts`);
+            sseEnd(controller);
+            return;
+          }
+
+          log(`[Scraper] Sending results to LLM for intelligence analysis...`);
+
+          const prompt = `You are a technical intelligence analyst for a startup CTO. Analyze the following batched search results for several technologies and identify important alerts.
+
+For AI Models: look for pricing changes, model deprecations, new cheaper/better alternatives, API breaking changes.
+For Frameworks/Languages/Libraries: look for new major releases, breaking changes, deprecation notices, security advisories.
+For Databases/Infrastructure: look for pricing changes, deprecations, major incidents.
 
 SEARCH RESULTS BATCH:
-${JSON.stringify(allResults, null, 2)}
+${JSON.stringify(allSearchResults, null, 2)}
 
-Identify any critical framework deprecations, major version releases, pricing changes, or architectural shifts.
+Identify any critical deprecations, major version releases, pricing changes, or architectural shifts.
 If nothing is urgent or significant, return an empty array [].
 
 Return ONLY a JSON array of objects matching this schema exactly:
@@ -100,103 +233,54 @@ Return ONLY a JSON array of objects matching this schema exactly:
   "description": "2-3 sentences explaining the impact on the founder",
   "severity": "critical" | "high" | "medium" | "low" | "info",
   "source_url": "URL from the search results",
-  "affected_package": "The exact name of the subject (e.g., 'Next.js' or 'OpenAI gpt-4')"
+  "affected_package": "The exact name of the technology"
 }]`;
-    const result = await generateWithFallback(genai, prompt);
-    const text = result.text ?? '';
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return [];
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    console.error('[run-scraper] Batch Gemini analysis failed:', e);
-    return [];
-  }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+          const rawText = await generateWithFallback(genai, prompt, log);
+          log(`\n[LLM Raw Response]\n${rawText.slice(0, 1500)}${rawText.length > 1500 ? '...' : ''}`);
+
+          const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+          const newAlerts: any[] = [];
+
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              log(`[Scraper] LLM identified ${parsed.length} actionable intelligence items`);
+              for (const alert of parsed) {
+                newAlerts.push({ ...alert, manifest_id: manifest.id, user_id: user.id, agent: 'scraper', is_read: false });
+              }
+            } catch {
+              log(`[Scraper] ✗ Failed to parse LLM JSON response`);
+            }
+          } else {
+            log(`[Scraper] LLM found no actionable intelligence`);
+          }
+
+          await supabase.from('alerts').delete().eq('manifest_id', manifest.id).eq('agent', 'scraper');
+          if (newAlerts.length > 0) await supabase.from('alerts').insert(newAlerts);
+          await supabase.from('agent_runs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
+
+          log(`[System] ✓ Scraper complete — ${newAlerts.length} alerts saved`);
+
+        } catch (innerError: any) {
+          const msg = innerError?.message ?? 'Unknown error';
+          log(`[System] ✗ Scraper error: ${msg}`);
+          await supabase.from('agent_runs').update({ status: 'failed', error: msg, completed_at: new Date().toISOString() }).eq('id', agentRun.id);
+        }
+
+      } catch (e: any) {
+        log(`[System] ✗ Fatal error: ${e?.message}`);
+      }
+
+      sseEnd(controller);
     }
+  });
 
-    const { data: manifest } = await supabase
-      .from('manifests')
-      .select('*')
-      .eq('user_id', user.id)
-      .single<Manifest>();
-
-    if (!manifest || !manifest.parsed_manifest) {
-      return NextResponse.json({ success: false, error: 'No analyzed manifest found' }, { status: 404 });
-    }
-
-    const { data: agentRun, error: runErr } = await supabase
-      .from('agent_runs')
-      .insert({ manifest_id: manifest.id, agent: 'scraper', status: 'running' })
-      .select()
-      .single();
-
-    if (runErr || !agentRun) throw runErr ?? new Error('Failed to create agent run');
-
-    try {
-      const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      const parsedManifest = manifest.parsed_manifest;
-      const newAlerts = [];
-
-      const aiModels: AIModel[] = parsedManifest?.ai_models ?? [];
-      const frameworks: TechEntry[] = parsedManifest?.frameworks ?? [];
-      
-      const searchPromises: Promise<{subject: string; type: 'ai_model' | 'framework'; results: TavilyResult[]}>[] = [];
-
-      for (const model of aiModels.slice(0, 5)) {
-        const subject = `${model.provider} ${model.model}`;
-        const queries = [`${model.provider} ${model.model} pricing change 2025`, `${model.provider} ${model.model} deprecated alternative`];
-        searchPromises.push(
-          Promise.all(queries.map(tavilySearch))
-          .then(res => ({ subject, type: 'ai_model' as const, results: res.flat() }))
-        );
-      }
-
-      for (const fw of frameworks.slice(0, 5)) {
-        const queries = [`${fw.name} new release breaking changes 2025`, `${fw.name} deprecation notice`];
-        searchPromises.push(
-          Promise.all(queries.map(tavilySearch))
-          .then(res => ({ subject: fw.name, type: 'framework' as const, results: res.flat() }))
-        );
-      }
-
-      const allSearchResults = await Promise.all(searchPromises);
-      const alerts = await analyzeBatchWithGemini(genai, allSearchResults);
-
-      for (const alert of alerts) {
-        newAlerts.push({ ...alert, manifest_id: manifest.id, user_id: user.id, agent: 'scraper', is_read: false });
-      }
-
-      // Delete old scraper alerts for this manifest
-      await supabase.from('alerts').delete().eq('manifest_id', manifest.id).eq('agent', 'scraper');
-
-      if (newAlerts.length > 0) {
-        await supabase.from('alerts').insert(newAlerts as any);
-      }
-
-      await supabase
-        .from('agent_runs')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
-        .eq('id', agentRun.id);
-
-      return NextResponse.json({ success: true, data: { agentRun, alertsCreated: newAlerts.length } });
-    } catch (innerError) {
-      const message = innerError instanceof Error ? innerError.message : 'Internal server error';
-      await supabase
-        .from('agent_runs')
-        .update({ status: 'failed', error: message, completed_at: new Date().toISOString() })
-        .eq('id', agentRun.id);
-      throw innerError;
-    }
-  } catch (error) {
-    console.error('[run-scraper] Error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
-  }
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 }

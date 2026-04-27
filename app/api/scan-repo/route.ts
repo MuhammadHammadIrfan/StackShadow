@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import type { ParsedManifest, ScanRepoRequest } from '@/types';
 
 async function generateWithFallback(genai: GoogleGenAI, prompt: string): Promise<{ text?: string }> {
-  const models = ['gemini-2.5-flash'];
+  // Use a variety of Gemini models to handle tier-specific downtime or 404s
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
   let lastError;
   
   for (const model of models) {
@@ -20,8 +21,11 @@ async function generateWithFallback(genai: GoogleGenAI, prompt: string): Promise
         lastError = err;
         console.warn(`[scan-repo] Model ${model} (Attempt ${attempt}/2) failed:`, err?.message || err);
         
+        // If it's a 404, the model name might be wrong or unavailable for this key, move to next model immediately
+        if (err?.status === 404) break;
+
         if (err?.status === 429 || err?.status === 503 || err?.message?.includes('demand') || err?.message?.includes('Quota')) {
-          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
           continue;
         }
         break;
@@ -29,29 +33,38 @@ async function generateWithFallback(genai: GoogleGenAI, prompt: string): Promise
     }
   }
 
-  // Fallback to Groq if provided
+  // Fallback to Groq with multiple models to avoid rate limits
   if (process.env.GROQ_API_KEY) {
-    console.log('[scan-repo] Falling back to Groq API...');
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return { text: data.choices[0]?.message?.content ?? '' };
-      } else {
-        console.warn('[scan-repo] Groq failed:', await res.text());
+    const groqModels = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'qwen/qwen3-32b', 'meta-llama/llama-4-scout-17b-16e-instruct'];
+    for (const gModel of groqModels) {
+      console.log(`[scan-repo] Trying Groq fallback with ${gModel}...`);
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: gModel,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return { text: data.choices[0]?.message?.content ?? '' };
+        } else {
+          const errText = await res.text();
+          console.warn(`[scan-repo] Groq ${gModel} failed:`, errText);
+          lastError = new Error(`Groq fallback failed: ${errText}`);
+          // If it's a rate limit, try the next Groq model
+          if (res.status === 429) continue;
+          break;
+        }
+      } catch (e) {
+        console.warn(`[scan-repo] Groq ${gModel} request failed:`, e);
+        lastError = e;
       }
-    } catch (e) {
-      console.warn('[scan-repo] Groq request failed:', e);
     }
   }
 
@@ -197,7 +210,8 @@ export async function POST(request: NextRequest) {
       .from('manifests')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .eq('repo_name', `${owner}/${repo}`)
+      .maybeSingle();
 
     let manifest;
     if (existing) {
