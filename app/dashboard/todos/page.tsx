@@ -28,7 +28,7 @@ const CATEGORIES = {
   security: { label: 'Security', color: 'text-critical bg-critical/10' },
   infrastructure: { label: 'Infrastructure', color: 'text-accent bg-accent/10' },
   ai: { label: 'AI Synthesis', color: 'text-indigo-400 bg-indigo-400/10' },
-  general: { label: 'General', color: 'text-muted-foreground bg-white/5' },
+  general: { label: 'General', color: 'text-muted-foreground bg-muted/50' },
 };
 
 export default function TodosPage() {
@@ -100,7 +100,7 @@ export default function TodosPage() {
       </header>
 
       {/* Input Section */}
-      <Card className="border-white/5 bg-white/5 backdrop-blur-md overflow-hidden p-2">
+      <Card className="border-border bg-card backdrop-blur-md overflow-hidden p-2">
         <form onSubmit={addTodo} className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           <div className="flex-1 relative group">
             <Plus className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
@@ -121,7 +121,7 @@ export default function TodosPage() {
                 onClick={() => setCategory(cat)}
                 className={cn(
                   "px-3 py-2 rounded-lg font-mono text-[10px] tracking-widest uppercase border transition-all",
-                  category === cat ? "border-accent/50 bg-accent/10 text-accent" : "border-white/5 text-muted-foreground hover:border-white/10"
+                  category === cat ? "border-accent/50 bg-accent/10 text-accent" : "border-border text-muted-foreground hover:border-foreground/20"
                 )}
               >
                 {cat[0]}
@@ -130,7 +130,7 @@ export default function TodosPage() {
             <Button 
               type="submit"
               size="sm"
-              className="rounded-lg bg-white text-black hover:bg-white/90 font-mono text-[10px] tracking-widest uppercase ml-2"
+              className="rounded-lg bg-foreground text-background hover:bg-foreground/90 font-mono text-[10px] tracking-widest uppercase ml-2"
             >
               Add Artifact
             </Button>
@@ -145,9 +145,9 @@ export default function TodosPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="py-24 text-center border border-dashed border-white/5 rounded-3xl"
+              className="py-24 text-center border border-dashed border-border rounded-3xl"
             >
-              <div className="p-4 bg-white/5 w-fit mx-auto rounded-full mb-4">
+              <div className="p-4 bg-muted/50 w-fit mx-auto rounded-full mb-4">
                 <Sparkles className="w-8 h-8 text-accent/40" />
               </div>
               <p className="font-sans text-xl font-light text-muted-foreground italic">System queue is clear.</p>
@@ -163,7 +163,7 @@ export default function TodosPage() {
                 layout
               >
                 <Card className={cn(
-                  "border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 group",
+                  "border-border bg-card hover:bg-muted transition-all duration-300 group",
                   todo.completed && "opacity-50"
                 )}>
                   <CardContent className="p-4 flex items-center gap-4">
@@ -204,7 +204,7 @@ export default function TodosPage() {
 
       {/* Footer Stats */}
       {todos.length > 0 && (
-        <footer className="pt-12 pb-8 text-center border-t border-white/5">
+        <footer className="pt-12 pb-8 text-center border-t border-border">
           <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase opacity-40">
             Protocol Scan: {completedCount} verified • {todos.length - completedCount} pending execution
           </p>

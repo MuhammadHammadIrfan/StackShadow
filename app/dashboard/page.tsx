@@ -159,7 +159,7 @@ export default function AnalyticsDashboard() {
 
       {/* Metric Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card className="border-white/5 bg-white/5 backdrop-blur-md relative overflow-hidden group">
+        <Card className="border-border bg-card backdrop-blur-md relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><Box className="w-20 h-20" /></div>
           <CardHeader className="pb-2">
             <CardDescription className="font-mono text-xs tracking-widest uppercase">Projects Diagnosed</CardDescription>
@@ -172,7 +172,7 @@ export default function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/5 bg-white/5 backdrop-blur-md relative overflow-hidden group">
+        <Card className="border-border bg-card backdrop-blur-md relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><ShieldAlert className="w-20 h-20" /></div>
           <CardHeader className="pb-2">
             <CardDescription className="font-mono text-xs tracking-widest uppercase text-critical">Issues Found</CardDescription>
@@ -185,7 +185,7 @@ export default function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/5 bg-white/5 backdrop-blur-md relative overflow-hidden group">
+        <Card className="border-border bg-card backdrop-blur-md relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><CheckCircle2 className="w-20 h-20" /></div>
           <CardHeader className="pb-2">
             <CardDescription className="font-mono text-[10px] tracking-widest uppercase text-accent">Alerts Reviewed</CardDescription>
@@ -202,14 +202,14 @@ export default function AnalyticsDashboard() {
 
       {/* Main Chart + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <Card className="lg:col-span-2 border-white/5 bg-white/5 backdrop-blur-md">
+        <Card className="lg:col-span-2 border-border bg-card backdrop-blur-md">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="font-sans text-2xl font-medium">Issues <span className="italic opacity-50">Over Time</span></CardTitle>
                 <CardDescription className="font-mono text-[10px] uppercase tracking-widest">7-Day Alert Volume</CardDescription>
               </div>
-              <div className="p-2 bg-white/5 rounded-lg"><BarChart3 className="w-4 h-4 text-muted-foreground" /></div>
+              <div className="p-2 bg-muted/50 rounded-lg"><BarChart3 className="w-4 h-4 text-muted-foreground" /></div>
             </div>
           </CardHeader>
           <CardContent className="h-[300px] mt-8">
@@ -219,17 +219,17 @@ export default function AnalyticsDashboard() {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }} 
+                  tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'monospace' }} 
                 />
                 <Tooltip 
                   content={<ChartTooltipContent hideLabel />} 
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                  cursor={{ fill: 'var(--surface-hover)' }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={entry.value === maxDay && entry.value > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.1)'} 
+                      fill={entry.value === maxDay && entry.value > 0 ? 'var(--accent)' : 'var(--muted)'} 
                     />
                   ))}
                 </Bar>
@@ -240,7 +240,7 @@ export default function AnalyticsDashboard() {
 
         {/* Recent Activity Widget - Real Data */}
         <div className="space-y-8">
-          <Card className="border-white/5 bg-white/5 backdrop-blur-md">
+          <Card className="border-border bg-card backdrop-blur-md">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-muted-foreground" />
@@ -252,7 +252,7 @@ export default function AnalyticsDashboard() {
                 <p className="text-muted-foreground font-mono text-[10px] uppercase">No scans run yet. Diagnose a project to begin.</p>
               ) : (
                 recentRuns.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                  <div key={i} className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-sans font-medium truncate">{item.label}</p>
                       <p className="text-[10px] font-mono text-muted-foreground uppercase">{item.time}</p>
@@ -260,7 +260,7 @@ export default function AnalyticsDashboard() {
                     <Badge 
                       variant="outline" 
                       className={cn(
-                        "text-[8px] border-white/10 uppercase tracking-tighter ml-2 shrink-0",
+                        "text-[8px] border-border uppercase tracking-tighter ml-2 shrink-0",
                         item.status === 'completed' ? 'border-green-500/30 text-green-400' :
                         item.status === 'running' ? 'border-accent/30 text-accent' :
                         item.status === 'failed' ? 'border-red-500/30 text-red-400' : ''
@@ -272,7 +272,7 @@ export default function AnalyticsDashboard() {
                 ))
               )}
               <Link href="/dashboard/alerts">
-                <Button variant="ghost" className="w-full mt-4 text-[10px] font-mono tracking-widest uppercase hover:bg-white/5">
+                <Button variant="ghost" className="w-full mt-4 text-[10px] font-mono tracking-widest uppercase hover:bg-muted">
                   View All Alerts <ArrowUpRight className="ml-2 w-3 h-3" />
                 </Button>
               </Link>

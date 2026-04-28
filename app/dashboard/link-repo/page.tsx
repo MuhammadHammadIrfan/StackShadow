@@ -23,9 +23,9 @@ function AgentStatusCard({ run, label, icon: Icon, color, isRunning, delay = 0 }
   const status = isRunning ? 'running' : (run?.status ?? 'idle');
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay }}>
-      <Card className={cn('border-white/5 bg-white/5 backdrop-blur-md transition-all duration-500', isRunning && 'border-accent/30 shadow-[0_0_20px_rgba(var(--accent),0.1)]')}>
+      <Card className={cn('border-border bg-card backdrop-blur-md transition-all duration-500', isRunning && 'border-accent/30 shadow-[0_0_20px_rgba(var(--accent),0.1)]')}>
         <CardHeader className="flex-row items-center gap-4 pb-4">
-          <div className={cn('p-3 rounded-xl', isRunning ? 'bg-accent/20 animate-pulse' : 'bg-white/5')} style={{ color: isRunning ? 'var(--accent)' : color }}>
+          <div className={cn('p-3 rounded-xl', isRunning ? 'bg-accent/20 animate-pulse' : 'bg-muted/50')} style={{ color: isRunning ? 'var(--accent)' : color }}>
             {isRunning ? <Zap className="w-5 h-5 animate-spin-slow" /> : <Icon className="w-5 h-5" />}
           </div>
           <div className="flex-1">
@@ -247,7 +247,7 @@ export default function DiagnoseProjectPage() {
             <span className="font-mono text-xs tracking-widest text-muted-foreground uppercase text-right">Active Project</span>
             <div className="relative">
               <select
-                className="appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 font-mono text-xs outline-none focus:border-accent/50 text-white min-w-48 transition-colors"
+                className="appearance-none bg-muted/50 border border-border rounded-xl px-4 py-3 pr-10 font-mono text-xs outline-none focus:border-accent/50 text-foreground min-w-48 transition-colors"
                 value={manifest?.id || ''}
                 onChange={(e) => {
                   const m = manifests.find(m => m.id === e.target.value);
@@ -257,7 +257,7 @@ export default function DiagnoseProjectPage() {
                 }}
               >
                 {manifests.map(m => (
-                  <option key={m.id} value={m.id} className="bg-black text-white">{m.repo_name}</option>
+                  <option key={m.id} value={m.id} className="bg-card text-foreground">{m.repo_name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -277,19 +277,19 @@ export default function DiagnoseProjectPage() {
                 <CardDescription className="font-mono text-[11px]">Your tokens and files are never stored. Analysis runs once, then the raw data is discarded.</CardDescription>
               </CardHeader>
             </Card>
-            <div className="p-6 border border-white/5 rounded-2xl bg-white/2 space-y-4 font-mono text-xs text-muted-foreground/90">
-              <p className="text-white">What we analyze:</p>
+            <div className="p-6 border border-border rounded-2xl bg-muted/30 space-y-4 font-mono text-xs text-muted-foreground/90">
+              <p className="text-foreground">What we analyze:</p>
               <div className="grid grid-cols-2 gap-2">
                 {['package.json', 'requirements.txt', 'README.md', 'Cargo.toml', 'go.mod', 'Dockerfile'].map(f => (
-                  <div key={f} className="p-2 bg-white/5 rounded-lg border border-white/5">{f}</div>
+                  <div key={f} className="p-2 bg-muted/50 rounded-lg border border-border">{f}</div>
                 ))}
               </div>
             </div>
           </div>
 
-          <Card className="lg:col-span-3 border-white/5 bg-white/5 backdrop-blur-md">
+          <Card className="lg:col-span-3 border-border bg-card backdrop-blur-md">
             {/* Mode Toggle */}
-            <div className="p-6 border-b border-white/5">
+            <div className="p-6 border-b border-border">
               <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-4">How do you want to add your project?</p>
               <div className="flex gap-2">
                 <button
@@ -298,7 +298,7 @@ export default function DiagnoseProjectPage() {
                     'flex items-center gap-3 px-5 py-3 rounded-xl border text-sm font-sans transition-all flex-1',
                     inputMode === 'github'
                       ? 'bg-accent/10 border-accent/30 text-accent'
-                      : 'border-white/5 bg-white/5 text-muted-foreground hover:text-white hover:bg-white/10'
+                      : 'border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                 >
                   <Github className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function DiagnoseProjectPage() {
                     'flex items-center gap-3 px-5 py-3 rounded-xl border text-sm font-sans transition-all flex-1',
                     inputMode === 'document'
                       ? 'bg-accent/10 border-accent/30 text-accent'
-                      : 'border-white/5 bg-white/5 text-muted-foreground hover:text-white hover:bg-white/10'
+                      : 'border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                 >
                   <FileText className="w-4 h-4" />
@@ -337,7 +337,7 @@ export default function DiagnoseProjectPage() {
                         <input
                           type="url"
                           placeholder="https://github.com/owner/repo"
-                          className="w-full bg-black/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 font-mono text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
+                          className="w-full bg-muted/50 border border-border rounded-xl py-4 pl-12 pr-4 font-mono text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-foreground"
                           value={repoUrl}
                           onChange={e => setRepoUrl(e.target.value)}
                           required
@@ -351,7 +351,7 @@ export default function DiagnoseProjectPage() {
                         <input
                           type={showToken ? 'text' : 'password'}
                           placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                          className="w-full bg-black/50 border border-white/10 rounded-xl py-4 pl-12 pr-12 font-mono text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
+                          className="w-full bg-muted/50 border border-border rounded-xl py-4 pl-12 pr-12 font-mono text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-foreground"
                           value={githubToken}
                           onChange={e => setGithubToken(e.target.value)}
                           required
@@ -359,7 +359,7 @@ export default function DiagnoseProjectPage() {
                         <button
                           type="button"
                           onClick={() => setShowToken(!showToken)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -378,7 +378,7 @@ export default function DiagnoseProjectPage() {
                       {scanLoading ? 'Analyzing...' : 'Start Diagnosis'}
                     </Button>
                     {manifests.length > 0 && (
-                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-white">
+                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground">
                         Cancel
                       </Button>
                     )}
@@ -401,7 +401,7 @@ export default function DiagnoseProjectPage() {
                         onClick={() => fileInputRef.current?.click()}
                         className={cn(
                           'relative border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all group',
-                          docFile ? 'border-accent/40 bg-accent/5' : 'border-white/10 hover:border-white/20 hover:bg-white/3'
+                          docFile ? 'border-accent/40 bg-accent/5' : 'border-border hover:border-foreground/20 hover:bg-muted/50'
                         )}
                       >
                         <input
@@ -415,13 +415,13 @@ export default function DiagnoseProjectPage() {
                           <>
                             <FileText className="w-8 h-8 text-accent" />
                             <div className="text-center">
-                              <p className="font-mono text-sm text-white">{docFile.name}</p>
+                              <p className="font-mono text-sm text-foreground">{docFile.name}</p>
                               <p className="font-mono text-xs text-muted-foreground mt-1">{(docFile.size / 1024).toFixed(1)} KB</p>
                             </div>
                             <button
                               type="button"
                               onClick={ev => { ev.stopPropagation(); setDocFile(null); }}
-                              className="absolute top-4 right-4 text-muted-foreground hover:text-white p-1"
+                              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -446,7 +446,7 @@ export default function DiagnoseProjectPage() {
                       <textarea
                         rows={4}
                         placeholder="Describe your project in a few sentences - what it does, what tech it uses, or anything else you want the AI to know..."
-                        className="w-full bg-black/50 border border-white/10 rounded-xl py-4 px-4 font-sans text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all resize-none text-white placeholder:text-muted-foreground/40 leading-relaxed"
+                        className="w-full bg-muted/50 border border-border rounded-xl py-4 px-4 font-sans text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all resize-none text-foreground placeholder:text-muted-foreground/40 leading-relaxed"
                         value={docDescription}
                         onChange={e => setDocDescription(e.target.value)}
                       />
@@ -464,7 +464,7 @@ export default function DiagnoseProjectPage() {
                       {docLoading ? 'Analyzing Document...' : 'Start Diagnosis'}
                     </Button>
                     {manifests.length > 0 && (
-                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-white">
+                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground">
                         Cancel
                       </Button>
                     )}
@@ -481,7 +481,7 @@ export default function DiagnoseProjectPage() {
             {/* Left: Project Card + Terminal + Alerts */}
             <div className="lg:col-span-2 flex flex-col gap-6">
               {/* Project Info */}
-              <Card className="border-white/5 bg-white/5 backdrop-blur-md overflow-hidden relative group">
+              <Card className="border-border bg-card backdrop-blur-md overflow-hidden relative group">
                 <div className="absolute top-0 right-0 p-8 opacity-10"><Box className="w-24 h-24" /></div>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -490,7 +490,7 @@ export default function DiagnoseProjectPage() {
                       <CardTitle className="text-3xl font-sans font-medium">{manifest.repo_name}</CardTitle>
                     </div>
                     {manifest.repo_url && (
-                      <Button variant="ghost" size="icon" className="hover:bg-white/10" asChild>
+                      <Button variant="ghost" size="icon" className="hover:bg-muted" asChild>
                         <a href={manifest.repo_url} target="_blank" rel="noreferrer"><ExternalLink className="w-5 h-5" /></a>
                       </Button>
                     )}
@@ -498,11 +498,11 @@ export default function DiagnoseProjectPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {manifest.parsed_manifest?.languages?.map((l: string) => <Badge key={l} variant="outline" className="font-mono text-xs border-white/10">{l}</Badge>)}
-                    {manifest.parsed_manifest?.frameworks?.slice(0, 6).map((f: any) => <Badge key={f.name} className="bg-white/5 text-white border-white/10 font-mono text-xs">{f.name}</Badge>)}
+                    {manifest.parsed_manifest?.languages?.map((l: string) => <Badge key={l} variant="outline" className="font-mono text-xs border-border">{l}</Badge>)}
+                    {manifest.parsed_manifest?.frameworks?.slice(0, 6).map((f: any) => <Badge key={f.name} className="bg-muted/50 text-foreground border-border font-mono text-xs">{f.name}</Badge>)}
                   </div>
                   <div className="mt-8">
-                    <Button variant="outline" size="sm" className="rounded-full hover:bg-white/10 border-white/10 text-muted-foreground font-mono text-xs" onClick={() => setManifest(null)}>
+                    <Button variant="outline" size="sm" className="rounded-full hover:bg-muted border-border text-muted-foreground font-mono text-xs" onClick={() => setManifest(null)}>
                       + Add Another Project
                     </Button>
                   </div>
@@ -518,7 +518,7 @@ export default function DiagnoseProjectPage() {
                     exit={{ opacity: 0, height: 0 }}
                     className="bg-black rounded-xl border border-white/10 font-mono text-xs overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-5 py-3 border-b border-white/10 bg-white/3">
+                    <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-muted/30">
                       <div className="flex gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
                         <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
@@ -593,9 +593,9 @@ export default function DiagnoseProjectPage() {
                   </motion.div>
                 )}
                 {!running && agentLogs.length > 0 && alerts.length === 0 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center border border-white/5 rounded-2xl bg-white/2">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center border border-border rounded-2xl bg-muted/30">
                     <ShieldCheck className="w-10 h-10 text-green-500 mx-auto mb-4" />
-                    <p className="font-sans text-xl font-medium text-white">No issues found</p>
+                    <p className="font-sans text-xl font-medium text-foreground">No issues found</p>
                     <p className="font-mono text-xs text-muted-foreground uppercase mt-2">Your project looks clean. Great work!</p>
                   </motion.div>
                 )}
@@ -603,7 +603,7 @@ export default function DiagnoseProjectPage() {
             </div>
 
             {/* Right: Agent Status */}
-            <div className="space-y-6 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-white/5 pt-8 lg:pt-0 lg:pl-8">
+            <div className="space-y-6 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-border pt-8 lg:pt-0 lg:pl-8">
               <div className="flex flex-col gap-4">
                 <h3 className="font-sans text-xl font-medium italic">AI Agents</h3>
                 <Button
@@ -622,13 +622,13 @@ export default function DiagnoseProjectPage() {
 
               {/* Tech Stack Summary */}
               {manifest.parsed_manifest && (
-                <div className="mt-8 space-y-4 border-t border-white/5 pt-6">
+                <div className="mt-8 space-y-4 border-t border-border pt-6">
                   <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">Detected Stack</p>
                   {manifest.parsed_manifest.databases?.length > 0 && (
                     <div>
                       <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/70 mb-2">Databases</p>
                       <div className="flex flex-wrap gap-1">
-                        {manifest.parsed_manifest.databases.map((d: string) => <Badge key={d} variant="outline" className="text-[9px] border-white/10 font-mono">{d}</Badge>)}
+                        {manifest.parsed_manifest.databases.map((d: string) => <Badge key={d} variant="outline" className="text-[9px] border-border font-mono">{d}</Badge>)}
                       </div>
                     </div>
                   )}
@@ -636,7 +636,7 @@ export default function DiagnoseProjectPage() {
                     <div>
                       <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/50 mb-2">Infrastructure</p>
                       <div className="flex flex-wrap gap-1">
-                        {manifest.parsed_manifest.infrastructure.slice(0, 5).map((i: string) => <Badge key={i} variant="outline" className="text-[9px] border-white/10 font-mono">{i}</Badge>)}
+                        {manifest.parsed_manifest.infrastructure.slice(0, 5).map((i: string) => <Badge key={i} variant="outline" className="text-[9px] border-border font-mono">{i}</Badge>)}
                       </div>
                     </div>
                   )}

@@ -80,12 +80,12 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-4 bg-white/5 p-1 rounded-xl border border-white/10">
-          <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-lg hover:bg-white/10">
+        <div className="flex items-center gap-4 bg-muted/50 p-1 rounded-xl border border-border">
+          <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-lg hover:bg-muted">
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <span className="font-mono text-[10px] tracking-widest uppercase px-4">{format(currentDate, 'MMM yyyy')}</span>
-          <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-lg hover:bg-white/10">
+          <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-lg hover:bg-muted">
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
@@ -93,11 +93,11 @@ export default function CalendarPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-12">
         {/* Main Calendar Grid */}
-        <Card className="xl:col-span-3 border-white/5 bg-white/5 backdrop-blur-md overflow-hidden p-0 shadow-2xl">
+        <Card className="xl:col-span-3 border-border bg-card backdrop-blur-md overflow-hidden p-0 shadow-2xl">
           {/* Weekdays Header */}
-          <div className="grid grid-cols-7 border-b border-white/5">
+          <div className="grid grid-cols-7 border-b border-border">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="py-4 text-center border-r last:border-r-0 border-white/5">
+              <div key={day} className="py-4 text-center border-r last:border-r-0 border-border">
                 <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground/60">{day}</span>
               </div>
             ))}
@@ -115,7 +115,7 @@ export default function CalendarPage() {
                   key={day.toString()}
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    "relative p-3 border-r border-b border-white/5 transition-all duration-300 cursor-pointer group hover:bg-white/5",
+                    "relative p-3 border-r border-b border-border transition-all duration-300 cursor-pointer group hover:bg-muted/50",
                     !isCurrentMonth && "opacity-20 grayscale",
                     isSelected && "bg-accent/10"
                   )}
@@ -156,7 +156,7 @@ export default function CalendarPage() {
 
         {/* Sidebar: Day Details & Integration Info */}
         <div className="space-y-8">
-          <Card className="border-white/5 bg-white/5 backdrop-blur-md">
+          <Card className="border-border bg-card backdrop-blur-md">
             <CardHeader>
               <CardTitle className="font-sans text-xl font-light italic">Observation Data</CardTitle>
               <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">{format(selectedDate, 'PPP')}</p>
@@ -164,7 +164,7 @@ export default function CalendarPage() {
             <CardContent className="space-y-6">
               {events.filter(e => isSameDay(e.date, selectedDate)).length > 0 ? (
                 events.filter(e => isSameDay(e.date, selectedDate)).map((event, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                  <div key={i} className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
                     <div className="flex items-center gap-2">
                       <Clock className="w-3 h-3 text-accent" />
                       <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Scheduled Protocol</span>
@@ -173,7 +173,7 @@ export default function CalendarPage() {
                   </div>
                 ))
               ) : (
-                <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
+                <div className="py-12 text-center border border-dashed border-border rounded-2xl">
                   <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/40">No protocols scheduled</p>
                 </div>
               )}

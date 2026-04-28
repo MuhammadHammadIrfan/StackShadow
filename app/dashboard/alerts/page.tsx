@@ -169,7 +169,7 @@ export default function AlertsPage() {
                 transition={{ delay: i * 0.1 }}
                 onClick={() => selectManifest(m)}
               >
-                <Card className="cursor-pointer border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all group overflow-hidden relative">
+                <Card className="cursor-pointer border-border bg-card hover:bg-muted hover:border-border transition-all group overflow-hidden relative">
                   <div className="absolute right-0 top-0 p-8 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all"><Box className="w-32 h-32" /></div>
                   <CardHeader className="pb-4">
                     <CardTitle className="font-sans text-2xl font-light group-hover:text-accent transition-colors">
@@ -181,7 +181,7 @@ export default function AlertsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2 mb-6">
-                      {m.parsed_manifest?.languages?.slice(0,3).map((l: string) => <Badge key={l} variant="outline" className="font-mono text-xs border-white/10">{l}</Badge>)}
+                      {m.parsed_manifest?.languages?.slice(0,3).map((l: string) => <Badge key={l} variant="outline" className="font-mono text-xs border-border">{l}</Badge>)}
                     </div>
                     <div className="flex items-center text-accent font-mono text-xs uppercase tracking-widest gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       View Intelligence <ArrowRight className="w-3 h-3" />
@@ -202,7 +202,7 @@ export default function AlertsPage() {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <button onClick={() => setActiveManifest(null)} className="inline-flex items-center gap-2 text-muted-foreground hover:text-white transition-colors mb-4 group">
+          <button onClick={() => setActiveManifest(null)} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4 group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="font-mono text-xs tracking-widest uppercase">Back to Projects</span>
           </button>
@@ -222,7 +222,7 @@ export default function AlertsPage() {
           <Button 
             variant="outline" 
             onClick={markAllRead}
-            className="rounded-full border-white/5 bg-white/5 hover:bg-accent/10 hover:text-accent font-mono text-xs tracking-widest uppercase"
+            className="rounded-full border-border bg-muted/50 hover:bg-accent/10 hover:text-accent font-mono text-xs tracking-widest uppercase"
           >
             <CheckCheck className="w-3 h-3 mr-2" />
             Mark All Read
@@ -238,7 +238,7 @@ export default function AlertsPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+          <div className="flex p-1 bg-muted/50 rounded-xl border border-border">
             {(['all', 'critical', 'high', 'medium', 'low', 'info'] as const).map(sev => (
               <button
                 key={sev}
@@ -246,8 +246,8 @@ export default function AlertsPage() {
                 className={cn(
                   "px-4 py-2 rounded-lg font-mono text-xs tracking-widest uppercase transition-all",
                   filter === sev 
-                    ? (sev === 'all' ? "bg-accent text-white" : `bg-white/10 text-white shadow-xl`) 
-                    : "text-muted-foreground hover:text-white"
+                    ? (sev === 'all' ? "bg-accent text-white" : `bg-foreground/10 text-foreground shadow-xl`) 
+                    : "text-muted-foreground hover:text-foreground"
                 )}
                 style={filter === sev && sev !== 'all' ? { borderBottom: `2px solid var(--${sev})` } : {}}
               >
@@ -256,14 +256,14 @@ export default function AlertsPage() {
             ))}
           </div>
 
-          <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+          <div className="flex p-1 bg-muted/50 rounded-xl border border-border">
             {(['all', 'fuzzer', 'scraper'] as const).map(agent => (
               <button
                 key={agent}
                 onClick={() => setAgentFilter(agent)}
                 className={cn(
                   "px-4 py-2 rounded-lg font-mono text-xs tracking-widest uppercase transition-all",
-                  agentFilter === agent ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
+                  agentFilter === agent ? "bg-foreground/10 text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {agent === 'all' ? 'All' : agent === 'fuzzer' ? 'Fuzzer' : 'Scraper'}
@@ -275,7 +275,7 @@ export default function AlertsPage() {
             onClick={() => setReadFilter(readFilter === 'unread' ? 'all' : 'unread')}
             className={cn(
               "px-4 py-3 rounded-xl font-mono text-xs tracking-widest uppercase border transition-all",
-              readFilter === 'unread' ? "border-accent text-accent bg-accent/5" : "border-white/10 text-muted-foreground hover:border-white/20"
+              readFilter === 'unread' ? "border-accent text-accent bg-accent/5" : "border-border text-muted-foreground hover:border-foreground/20"
             )}
           >
             {readFilter === 'unread' ? 'Unread Only' : 'All Alerts'}
@@ -318,7 +318,7 @@ export default function AlertsPage() {
       )}
 
       {filtered.length > 0 && (
-        <footer className="pt-12 pb-8 text-center border-t border-white/5">
+        <footer className="pt-12 pb-8 text-center border-t border-border">
           <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase opacity-70">
             Synthesized Protocol Scan Complete • {filtered.length} of {alerts.length} Objects Displayed
           </p>

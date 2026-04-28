@@ -28,7 +28,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/50 bg-muted/50 backdrop-blur-md mb-8"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
           <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
@@ -68,7 +68,7 @@ export function Hero() {
           <button
             onClick={handleLogin}
             data-cursor-hover
-            className="group relative px-8 py-4 bg-white text-background rounded-full font-mono text-xs tracking-widest overflow-hidden transition-transform active:scale-95"
+            className="group relative px-8 py-4 bg-foreground text-background rounded-full font-mono text-xs tracking-widest overflow-hidden transition-transform active:scale-95"
           >
             <span className="relative z-10">LAUNCH SYSTEM</span>
             <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -77,7 +77,7 @@ export function Hero() {
           <a
             href="#about"
             data-cursor-hover
-            className="font-mono text-xs tracking-widest text-muted-foreground hover:text-white transition-colors duration-300 border-b border-white/10 pb-1"
+            className="font-mono text-xs tracking-widest text-muted-foreground hover:text-foreground transition-colors duration-300 border-b border-border/50 pb-1"
           >
             VIEW PROTOCOL
           </a>
@@ -85,8 +85,8 @@ export function Hero() {
       </div>
 
       {/* Decorative vertical lines */}
-      <div className="absolute left-12 top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
-      <div className="absolute right-12 top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
+      <div className="absolute left-12 top-0 bottom-0 w-px bg-border/50 hidden lg:block" />
+      <div className="absolute right-12 top-0 bottom-0 w-px bg-border/50 hidden lg:block" />
 
       {/* Hero Footer Stats */}
       <div className="absolute bottom-12 left-8 md:left-12 flex flex-col gap-4">
@@ -97,7 +97,7 @@ export function Hero() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-px bg-white/20" />
+          <div className="w-8 h-px bg-border" />
           <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
             Status: Fully Autonomous
           </span>

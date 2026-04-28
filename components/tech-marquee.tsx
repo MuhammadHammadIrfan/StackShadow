@@ -60,7 +60,7 @@ function MarqueeRow({ items, direction = "left" }: { items: string[]; direction?
             }}
           >
             {item}
-            <span className="mx-8 text-white/20">•</span>
+            <span className="mx-8 text-muted-foreground/30">•</span>
           </span>
         ))}
       </motion.div>

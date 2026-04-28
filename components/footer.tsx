@@ -42,7 +42,7 @@ export function Footer() {
         />
 
         {/* Content */}
-        <div className="relative py-16 md:py-24 px-8 md:px-12 border-t border-white/10">
+        <div className="relative py-16 md:py-24 px-8 md:px-12 border-t border-border/50">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <motion.h2
               className="font-sans text-4xl md:text-6xl lg:text-8xl font-light tracking-tight text-center md:text-left"
@@ -68,12 +68,12 @@ export function Footer() {
       </motion.a>
 
       {/* Footer Info */}
-      <div className="px-8 md:px-12 py-8 border-t border-white/10">
+      <div className="px-8 md:px-12 py-8 border-t border-border/50">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Local Time */}
           <div className="font-mono text-xs tracking-widest text-muted-foreground">
             <span className="mr-2">SYSTEM CLOCK</span>
-            <span className="text-white tabular-nums">{time}</span>
+            <span className="text-foreground tabular-nums">{time}</span>
           </div>
 
           {/* Links */}
@@ -83,7 +83,7 @@ export function Footer() {
                 key={link}
                 href="#"
                 data-cursor-hover
-                className="font-mono text-xs tracking-widest text-muted-foreground hover:text-white transition-colors duration-300"
+                className="font-mono text-xs tracking-widest text-muted-foreground hover:text-foreground transition-colors duration-300"
               >
                 {link.toUpperCase()}
               </a>

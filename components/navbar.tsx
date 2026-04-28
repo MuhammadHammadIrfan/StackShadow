@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useTheme } from "next-themes"
+import { Sun, Moon } from "lucide-react"
 
 const navLinks = [
   { label: "Agents", href: "#works" },
@@ -12,8 +14,11 @@ const navLinks = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
     }
@@ -78,6 +83,17 @@ export function Navbar() {
             <span className="font-mono text-xs tracking-wider text-muted-foreground">SYSTEM ACTIVE</span>
           </div>
 
+          {/* Theme Toggle */}
+          {mounted && (
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="hidden md:flex p-2 rounded-xl border border-border/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground ml-4"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          )}
+
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -137,6 +153,19 @@ export function Navbar() {
                 </span>
                 <span className="font-mono text-xs tracking-wider text-muted-foreground">SYSTEM ACTIVE</span>
               </motion.div>
+
+              {mounted && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="flex items-center gap-2 p-3 mt-4 rounded-xl border border-border/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <span className="font-mono text-sm tracking-widest uppercase">Toggle Theme</span>
+                </motion.button>
+              )}
             </nav>
           </motion.div>
         )}
