@@ -46,17 +46,17 @@ function MarqueeRow({ items, direction = "left" }: { items: string[]; direction?
             key={index}
             className="group font-sans text-5xl md:text-7xl lg:text-8xl font-light tracking-tight whitespace-nowrap cursor-default"
             style={{
-              WebkitTextStroke: "1px rgba(255,255,255,0.3)",
+              WebkitTextStroke: "1px var(--muted-foreground)",
               color: "transparent",
               transition: "all 0.3s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "white"
+              e.currentTarget.style.color = "var(--foreground)"
               e.currentTarget.style.webkitTextStroke = "none"
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = "transparent"
-              e.currentTarget.style.webkitTextStroke = "1px rgba(255,255,255,0.3)"
+              e.currentTarget.style.webkitTextStroke = "1px var(--muted-foreground)"
             }}
           >
             {item}

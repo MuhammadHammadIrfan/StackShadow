@@ -43,7 +43,7 @@ export function About() {
               key={index}
               className="text-4xl md:text-6xl lg:text-7xl font-sans font-light tracking-tight text-foreground/90"
               style={{
-                WebkitTextStroke: index % 2 === 0 ? "none" : "1px var(--focus)",
+                WebkitTextStroke: index % 2 === 0 ? "none" : "1px var(--muted-foreground)",
                 color: index % 2 === 0 ? "inherit" : "transparent",
               }}
             >
