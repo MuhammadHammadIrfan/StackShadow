@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Hexagon className="w-8 h-8 text-accent fill-accent/10" />
               <div className="absolute inset-0 bg-accent/20 blur-lg rounded-full" />
             </div>
-            <span className="font-sans text-lg font-light tracking-tight">Stack<span className="italic opacity-50">Shadow</span></span>
+            <span className="font-sans text-lg font-medium tracking-tight">Stack<span className="italic opacity-80">Shadow</span></span>
           </div>
           {/* Theme Toggle */}
           {mounted && (
@@ -110,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   "w-4 h-4 transition-transform duration-500",
                   isActive ? "scale-110" : "group-hover:scale-110"
                 )} />
-                <span className="font-mono text-[10px] tracking-widest uppercase">{link.label}</span>
+                <span className="font-mono text-xs tracking-wider uppercase">{link.label}</span>
                 {isActive && (
                   <motion.div 
                     layoutId="active-nav"
@@ -130,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{user?.email}</p>
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Signed In</p>
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest">Signed In</p>
             </div>
           </div>
           <Button 
@@ -139,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <LogOut className="w-4 h-4" />
-            <span className="font-mono text-[10px] tracking-widest uppercase">Sign Out</span>
+            <span className="font-mono text-xs tracking-widest uppercase">Sign Out</span>
           </Button>
         </div>
       </aside>

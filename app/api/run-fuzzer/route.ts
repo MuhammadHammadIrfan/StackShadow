@@ -264,13 +264,21 @@ ${vulnsJsonString}
 For EACH vulnerability:
 1. Is the specific package version strictly affected according to the details? (If patched, out of range, or irrelevant, it is a false positive).
 2. If it is a real threat, summarize the risk and what action to take for a non-expert founder in 2-3 sentences.
+3. Provide a solution: the recommended action (e.g. "Upgrade to v4.2.1"), a URL for the fix/patch, and the URL that proves the vulnerability exists.
+4. DO NOT use emojis in any part of your output.
 
 Return ONLY a JSON array of valid vulnerabilities (exclude false positives completely).
 Schema:
 [{
   "cve_id": "string",
   "package_name": "string",
-  "summary": "string (your 2-3 sentence summary)"
+  "summary": "string (your 2-3 sentence summary)",
+  "solution": {
+    "recommendation": "string (e.g. Upgrade next to v16.2.5)",
+    "fix_url": "string (URL to the patched version or changelog)",
+    "proof_url": "string (URL proving the vulnerability, e.g. CVE page or advisory)",
+    "alternatives": [{"name": "string", "url": "string"}]
+  }
 }]`;
 
             const rawText = await generateWithFallback(genai, prompt, log);
@@ -294,6 +302,7 @@ Schema:
                       source_url: original.vuln.references?.[0]?.url ?? `https://osv.dev/vulnerability/${original.vuln.id}`,
                       affected_package: `${original.dep.name}${original.dep.version ? `@${original.dep.version}` : ''}`,
                       is_read: false,
+                      solution: pr.solution ?? null,
                     });
                   }
                 }
@@ -301,7 +310,7 @@ Schema:
                 log(`[Fuzzer] ✗ Failed to parse LLM JSON response`);
               }
             } else {
-              log(`[Fuzzer] LLM returned no JSON — no confirmed vulnerabilities`);
+              log(`[Fuzzer] LLM returned no JSON - no confirmed vulnerabilities`);
             }
           }
 
@@ -309,7 +318,7 @@ Schema:
           if (newAlerts.length > 0) await supabase.from('alerts').insert(newAlerts);
           await supabase.from('agent_runs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
 
-          log(`[System] ✓ Fuzzer complete — ${newAlerts.length} alerts saved`);
+          log(`[System] ✓ Fuzzer complete - ${newAlerts.length} alerts saved`);
 
         } catch (innerError: any) {
           const msg = innerError?.message ?? 'Unknown error';

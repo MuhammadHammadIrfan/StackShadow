@@ -104,7 +104,7 @@ export default function AnalyticsDashboard() {
       // Build recent runs
       setRecentRuns(
         (runsData ?? []).map((r: any) => ({
-          label: `${r.agent === 'fuzzer' ? 'Fuzzer' : 'Scraper'} — ${r.manifests?.repo_name ?? '?'}`,
+          label: `${r.agent === 'fuzzer' ? 'Fuzzer' : 'Scraper'} - ${r.manifests?.repo_name ?? '?'}`,
           time: timeAgo(r.started_at),
           status: r.status,
         }))
@@ -139,9 +139,9 @@ export default function AnalyticsDashboard() {
         <div>
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-accent/20 rounded-lg text-accent"><LayoutDashboard className="w-5 h-5" /></div>
-            <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase">System: Operational</p>
+            <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground uppercase">System: Operational</p>
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-6xl font-sans font-light tracking-tight">
+          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-6xl font-sans font-medium tracking-tight">
             Welcome back, <span className="italic text-muted-foreground/60">{stats.userEmail.split('@')[0]}</span>
           </motion.h1>
           <p className="font-mono text-xs text-muted-foreground tracking-widest uppercase mt-4 max-w-lg leading-relaxed">
@@ -150,7 +150,7 @@ export default function AnalyticsDashboard() {
         </div>
         <div className="flex gap-4">
           <Link href="/dashboard/link-repo">
-            <Button className="rounded-full bg-accent text-white hover:bg-accent/90 font-mono text-[10px] tracking-widest uppercase px-8 py-6">
+            <Button className="rounded-full bg-accent text-white hover:bg-accent/90 font-mono text-xs tracking-widest uppercase px-8 py-6">
               Start Diagnosis <Zap className="ml-2 w-3 h-3" />
             </Button>
           </Link>
@@ -162,11 +162,11 @@ export default function AnalyticsDashboard() {
         <Card className="border-white/5 bg-white/5 backdrop-blur-md relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><Box className="w-20 h-20" /></div>
           <CardHeader className="pb-2">
-            <CardDescription className="font-mono text-[10px] tracking-widest uppercase">Projects Diagnosed</CardDescription>
-            <CardTitle className="text-5xl font-sans font-light tracking-tight">{stats.projects}</CardTitle>
+            <CardDescription className="font-mono text-xs tracking-widest uppercase">Projects Diagnosed</CardDescription>
+            <CardTitle className="text-5xl font-sans font-medium tracking-tight">{stats.projects}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-muted-foreground font-mono text-[10px] uppercase">
+            <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs uppercase">
               <TrendingUp className="w-3 h-3 text-accent" /> Analyzed this account
             </div>
           </CardContent>
@@ -175,11 +175,11 @@ export default function AnalyticsDashboard() {
         <Card className="border-white/5 bg-white/5 backdrop-blur-md relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><ShieldAlert className="w-20 h-20" /></div>
           <CardHeader className="pb-2">
-            <CardDescription className="font-mono text-[10px] tracking-widest uppercase text-critical">Issues Found</CardDescription>
-            <CardTitle className="text-5xl font-sans font-light tracking-tight text-critical">{stats.vulnerabilities}</CardTitle>
+            <CardDescription className="font-mono text-xs tracking-widest uppercase text-critical">Issues Found</CardDescription>
+            <CardTitle className="text-5xl font-sans font-medium tracking-tight text-critical">{stats.vulnerabilities}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-muted-foreground font-mono text-[10px] uppercase">
+            <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs uppercase">
               <Activity className="w-3 h-3 text-critical" /> {todayCount > 0 ? `${todayCount} new today` : 'None today'}
             </div>
           </CardContent>
@@ -189,7 +189,7 @@ export default function AnalyticsDashboard() {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><CheckCircle2 className="w-20 h-20" /></div>
           <CardHeader className="pb-2">
             <CardDescription className="font-mono text-[10px] tracking-widest uppercase text-accent">Alerts Reviewed</CardDescription>
-            <CardTitle className="text-5xl font-sans font-light tracking-tight text-accent">{stats.resolved}</CardTitle>
+            <CardTitle className="text-5xl font-sans font-medium tracking-tight text-accent">{stats.resolved}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-muted-foreground font-mono text-[10px] uppercase">
@@ -206,7 +206,7 @@ export default function AnalyticsDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="font-sans text-2xl font-light">Issues <span className="italic opacity-50">Over Time</span></CardTitle>
+                <CardTitle className="font-sans text-2xl font-medium">Issues <span className="italic opacity-50">Over Time</span></CardTitle>
                 <CardDescription className="font-mono text-[10px] uppercase tracking-widest">7-Day Alert Volume</CardDescription>
               </div>
               <div className="p-2 bg-white/5 rounded-lg"><BarChart3 className="w-4 h-4 text-muted-foreground" /></div>
@@ -244,7 +244,7 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <CardTitle className="font-sans text-xl font-light italic">Recent Scans</CardTitle>
+                <CardTitle className="font-sans text-xl font-medium italic">Recent Scans</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -282,7 +282,7 @@ export default function AnalyticsDashboard() {
           <Card className="border-accent/20 bg-accent/5 backdrop-blur-md">
             <CardContent className="p-6">
               <p className="font-mono text-[10px] tracking-widest uppercase text-accent mb-2">Tip</p>
-              <p className="font-sans text-sm font-light italic leading-relaxed text-muted-foreground">
+              <p className="font-sans text-sm font-medium italic leading-relaxed text-muted-foreground">
                 "Run a new diagnosis after updating your dependencies to catch new vulnerabilities early."
               </p>
             </CardContent>

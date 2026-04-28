@@ -43,6 +43,13 @@ export type AlertSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type AgentType = 'fuzzer' | 'scraper';
 export type AgentStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export interface AlertSolution {
+  recommendation?: string;
+  fix_url?: string;
+  proof_url?: string;
+  alternatives?: Array<{ name: string; url: string }>;
+}
+
 export interface Alert {
   id: string;
   manifest_id: string;
@@ -54,6 +61,28 @@ export interface Alert {
   source_url?: string;
   affected_package?: string;
   is_read: boolean;
+  solution?: AlertSolution | null;
+  created_at: string;
+}
+
+export interface PricingItem {
+  name: string;
+  type: string;
+  is_paid: boolean;
+  current_cost: number;
+  alternative_name?: string;
+  alternative_cost?: number;
+  alternative_url?: string;
+  billing_cycle?: string;
+}
+
+export interface PricingAnalysis {
+  id: string;
+  manifest_id: string;
+  user_id: string;
+  items: PricingItem[];
+  total_current: number;
+  total_recommended: number;
   created_at: string;
 }
 

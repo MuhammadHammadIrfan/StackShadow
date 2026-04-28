@@ -55,7 +55,7 @@ export function Hero() {
           transition={{ duration: 1, delay: 0.5 }}
           className="max-w-xl mx-auto font-mono text-sm md:text-base text-muted-foreground/80 leading-relaxed mb-12"
         >
-          The autonomous Shadow CTO system. We monitor your stack for security, model pricing, and framework deprecations — synthesized by Gemini.
+          The autonomous Shadow CTO system. We monitor your stack for security, model pricing, and framework deprecations - synthesized by Gemini.
         </motion.p>
 
         {/* Call to Actions */}

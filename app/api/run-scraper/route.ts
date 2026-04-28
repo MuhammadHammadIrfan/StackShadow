@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
             log(`[Scraper] No web intelligence found. Nothing to analyze.`);
             await supabase.from('alerts').delete().eq('manifest_id', manifest.id).eq('agent', 'scraper');
             await supabase.from('agent_runs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
-            log(`[System] ✓ Scraper complete — 0 alerts`);
+            log(`[System] ✓ Scraper complete - 0 alerts`);
             sseEnd(controller);
             return;
           }
@@ -237,7 +237,9 @@ SEARCH RESULTS BATCH:
 ${JSON.stringify(allSearchResults, null, 2)}
 
 Identify any critical deprecations, major version releases, pricing changes, or architectural shifts.
+For EACH alert, also provide a solution object with: the recommended action, a URL for the fix, best alternatives (name+url pairs), and the proof URL showing the deprecation/issue.
 If nothing is urgent or significant, return an empty array [].
+DO NOT use emojis in your output.
 
 Return ONLY a JSON array of objects matching this schema exactly:
 [{
@@ -245,7 +247,13 @@ Return ONLY a JSON array of objects matching this schema exactly:
   "description": "2-3 sentences explaining the impact on the founder",
   "severity": "critical" | "high" | "medium" | "low" | "info",
   "source_url": "URL from the search results",
-  "affected_package": "The exact name of the technology"
+  "affected_package": "The exact name of the technology",
+  "solution": {
+    "recommendation": "Short action to take (e.g. Upgrade to v16.2, Switch to alternative X)",
+    "fix_url": "URL to the fix, new version, or migration guide",
+    "proof_url": "URL proving the issue (changelog, deprecation notice, advisory)",
+    "alternatives": [{"name": "Alternative name", "url": "https://..."}]
+  }
 }]`;
 
           const rawText = await generateWithFallback(genai, prompt, log);
@@ -259,7 +267,14 @@ Return ONLY a JSON array of objects matching this schema exactly:
               const parsed = JSON.parse(jsonMatch[0]);
               log(`[Scraper] LLM identified ${parsed.length} actionable intelligence items`);
               for (const alert of parsed) {
-                newAlerts.push({ ...alert, manifest_id: manifest.id, user_id: user.id, agent: 'scraper', is_read: false });
+                newAlerts.push({
+                  ...alert,
+                  manifest_id: manifest.id,
+                  user_id: user.id,
+                  agent: 'scraper',
+                  is_read: false,
+                  solution: alert.solution ?? null,
+                });
               }
             } catch {
               log(`[Scraper] ✗ Failed to parse LLM JSON response`);
@@ -270,9 +285,81 @@ Return ONLY a JSON array of objects matching this schema exactly:
 
           await supabase.from('alerts').delete().eq('manifest_id', manifest.id).eq('agent', 'scraper');
           if (newAlerts.length > 0) await supabase.from('alerts').insert(newAlerts);
+
+          // ── Pricing Analysis Pass ─────────────────────────────────────
+          log(`[Scraper] Starting pricing analysis...`);
+
+          const allTech = [
+            ...aiModels.map(m => ({ name: `${m.provider} ${m.model}`, type: 'ai_model' })),
+            ...frameworks.map(f => ({ name: f.name, type: 'framework' })),
+            ...databases.map(d => ({ name: d, type: 'database' })),
+            ...infrastructure.map(i => ({ name: i, type: 'infrastructure' })),
+            ...keyDeps.slice(0, 8).map(d => ({ name: d.name, type: 'dependency' })),
+          ];
+
+          const pricingPrompt = `You are a cloud cost optimization expert. Given this project's tech stack, analyze each item and determine if it is a paid service or free/open-source.
+
+TECH STACK:
+${JSON.stringify(allTech, null, 2)}
+
+For EACH item, determine:
+1. Is it a paid API/service/product, or free/open-source?
+2. If paid: estimate the typical monthly cost for a startup (in USD). Be realistic based on common usage tiers.
+3. If paid: suggest a cheaper or free alternative with its estimated monthly cost and a URL to learn more.
+4. Estimate the billing cycle (e.g. "monthly", "per-request", "annual").
+
+Return ONLY valid JSON matching this schema:
+{
+  "items": [
+    {
+      "name": "Service name",
+      "type": "ai_model|framework|database|infrastructure|dependency",
+      "is_paid": true/false,
+      "current_cost": 0.00,
+      "alternative_name": "Cheaper option or empty string",
+      "alternative_cost": 0.00,
+      "alternative_url": "https://...",
+      "billing_cycle": "monthly|per-request|annual|free"
+    }
+  ],
+  "total_current": 0.00,
+  "total_recommended": 0.00
+}
+
+Rules:
+- DO NOT USE EMOJIS in any part of the output.
+- CRITICAL: Perform multiple internal checks before returning cost estimates. Do not hallucinate pricing. Base estimates strictly on official pricing tiers.
+- current_cost and alternative_cost are monthly estimates in USD
+- For free tools, set current_cost to 0 and is_paid to false
+- total_current = sum of all current_cost values
+- total_recommended = sum of all (alternative_cost where is_paid=true, else current_cost)
+- Be conservative with estimates, use startup-tier pricing not enterprise`;
+
+          try {
+            const pricingRaw = await generateWithFallback(genai, pricingPrompt, log);
+            log(`[Scraper] Pricing analysis response received`);
+            const pricingJsonMatch = pricingRaw.match(/\{[\s\S]*\}/);
+            if (pricingJsonMatch) {
+              const pricingData = JSON.parse(pricingJsonMatch[0]);
+              // Delete old pricing for this manifest and insert new
+              await supabase.from('pricing_analysis').delete().eq('manifest_id', manifest.id);
+              await supabase.from('pricing_analysis').insert({
+                manifest_id: manifest.id,
+                user_id: user.id,
+                items: pricingData.items ?? [],
+                total_current: pricingData.total_current ?? 0,
+                total_recommended: pricingData.total_recommended ?? 0,
+              });
+              const paidCount = (pricingData.items ?? []).filter((i: any) => i.is_paid).length;
+              log(`[Scraper] ✓ Pricing analysis saved - ${paidCount} paid services, $${pricingData.total_current ?? 0}/mo estimated`);
+            }
+          } catch (pricingErr: any) {
+            log(`[Scraper] ⚠ Pricing analysis skipped: ${pricingErr?.message?.slice(0, 80)}`);
+          }
+
           await supabase.from('agent_runs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
 
-          log(`[System] ✓ Scraper complete — ${newAlerts.length} alerts saved`);
+          log(`[System] ✓ Scraper complete - ${newAlerts.length} alerts saved`);
 
         } catch (innerError: any) {
           const msg = innerError?.message ?? 'Unknown error';

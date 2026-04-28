@@ -8,13 +8,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import type { Manifest, AgentRun, Alert } from '@/types';
+import type { Manifest, AgentRun, Alert, PricingAnalysis } from '@/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCard } from '@/components/ui/alert-card';
+import { PricingBlock } from '@/components/ui/pricing-block';
 
 type InputMode = 'github' | 'document';
 
@@ -31,7 +32,7 @@ function AgentStatusCard({ run, label, icon: Icon, color, isRunning, delay = 0 }
             <CardTitle className="text-sm font-sans font-medium tracking-tight">{label}</CardTitle>
             <div className="flex items-center gap-2 mt-1">
               <span className={cn('w-1.5 h-1.5 rounded-full', status === 'running' ? 'bg-accent animate-ping' : status === 'completed' ? 'bg-green-500' : 'bg-muted-foreground')} />
-              <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">{status}</span>
+              <span className="text-xs font-mono tracking-widest text-muted-foreground uppercase">{status}</span>
             </div>
           </div>
         </CardHeader>
@@ -46,6 +47,7 @@ export default function DiagnoseProjectPage() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [agentRuns, setAgentRuns] = useState<Record<string, AgentRun>>({});
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [pricing, setPricing] = useState<PricingAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [agentLogs, setAgentLogs] = useState<string[]>([]);
@@ -196,6 +198,16 @@ export default function DiagnoseProjectPage() {
         .order('created_at', { ascending: false });
       setAlerts(newAlerts ?? []);
 
+      // Fetch pricing analysis
+      const { data: pricingData } = await supabase
+        .from('pricing_analysis')
+        .select('*')
+        .eq('manifest_id', manifest.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setPricing(pricingData ?? null);
+
     } catch (e: any) {
       setAgentLogs(prev => [...prev, `[System] ✗ Error: ${e?.message}`]);
     } finally {
@@ -224,7 +236,7 @@ export default function DiagnoseProjectPage() {
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-4">
         <div>
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-sans font-light tracking-tight mb-4">
+          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-sans font-medium tracking-tight mb-4">
             Diagnose <span className="italic text-muted-foreground/60">Project</span>
           </motion.h1>
           <p className="font-mono text-xs text-muted-foreground tracking-widest uppercase">Scan your project for issues and get AI-powered recommendations.</p>
@@ -232,7 +244,7 @@ export default function DiagnoseProjectPage() {
 
         {manifests.length > 0 && (
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase text-right">Active Project</span>
+            <span className="font-mono text-xs tracking-widest text-muted-foreground uppercase text-right">Active Project</span>
             <div className="relative">
               <select
                 className="appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 font-mono text-xs outline-none focus:border-accent/50 text-white min-w-48 transition-colors"
@@ -265,7 +277,7 @@ export default function DiagnoseProjectPage() {
                 <CardDescription className="font-mono text-[11px]">Your tokens and files are never stored. Analysis runs once, then the raw data is discarded.</CardDescription>
               </CardHeader>
             </Card>
-            <div className="p-6 border border-white/5 rounded-2xl bg-white/2 space-y-4 font-mono text-[10px] text-muted-foreground/70">
+            <div className="p-6 border border-white/5 rounded-2xl bg-white/2 space-y-4 font-mono text-xs text-muted-foreground/90">
               <p className="text-white">What we analyze:</p>
               <div className="grid grid-cols-2 gap-2">
                 {['package.json', 'requirements.txt', 'README.md', 'Cargo.toml', 'go.mod', 'Dockerfile'].map(f => (
@@ -278,7 +290,7 @@ export default function DiagnoseProjectPage() {
           <Card className="lg:col-span-3 border-white/5 bg-white/5 backdrop-blur-md">
             {/* Mode Toggle */}
             <div className="p-6 border-b border-white/5">
-              <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-4">How do you want to add your project?</p>
+              <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-4">How do you want to add your project?</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setInputMode('github')}
@@ -319,7 +331,7 @@ export default function DiagnoseProjectPage() {
                 >
                   <CardContent className="p-8 space-y-6">
                     <div className="space-y-3">
-                      <label className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">GitHub Repository URL</label>
+                      <label className="font-mono text-xs tracking-widest uppercase text-muted-foreground">GitHub Repository URL</label>
                       <div className="relative">
                         <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
@@ -333,7 +345,7 @@ export default function DiagnoseProjectPage() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <label className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">GitHub Access Token</label>
+                      <label className="font-mono text-xs tracking-widest uppercase text-muted-foreground">GitHub Access Token</label>
                       <div className="relative">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
@@ -352,10 +364,10 @@ export default function DiagnoseProjectPage() {
                           {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
-                      <p className="font-mono text-[10px] text-muted-foreground/60">Read-only access needed. Token is never stored.</p>
+                      <p className="font-mono text-xs text-muted-foreground/60">Read-only access needed. Token is never stored.</p>
                     </div>
                     {error && (
-                      <div className="flex items-center gap-2 text-critical text-[10px] font-mono p-3 bg-critical/10 rounded-lg border border-critical/20">
+                      <div className="flex items-center gap-2 text-critical text-xs font-mono p-3 bg-critical/10 rounded-lg border border-critical/20">
                         <AlertCircle className="w-3 h-3 shrink-0" />
                         {error}
                       </div>
@@ -366,7 +378,7 @@ export default function DiagnoseProjectPage() {
                       {scanLoading ? 'Analyzing...' : 'Start Diagnosis'}
                     </Button>
                     {manifests.length > 0 && (
-                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-white">
+                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-white">
                         Cancel
                       </Button>
                     )}
@@ -384,7 +396,7 @@ export default function DiagnoseProjectPage() {
                   <CardContent className="p-8 space-y-6">
                     {/* File Drop Zone */}
                     <div className="space-y-3">
-                      <label className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Project Document</label>
+                      <label className="font-mono text-xs tracking-widest uppercase text-muted-foreground">Project Document</label>
                       <div
                         onClick={() => fileInputRef.current?.click()}
                         className={cn(
@@ -404,7 +416,7 @@ export default function DiagnoseProjectPage() {
                             <FileText className="w-8 h-8 text-accent" />
                             <div className="text-center">
                               <p className="font-mono text-sm text-white">{docFile.name}</p>
-                              <p className="font-mono text-[10px] text-muted-foreground mt-1">{(docFile.size / 1024).toFixed(1)} KB</p>
+                              <p className="font-mono text-xs text-muted-foreground mt-1">{(docFile.size / 1024).toFixed(1)} KB</p>
                             </div>
                             <button
                               type="button"
@@ -416,10 +428,10 @@ export default function DiagnoseProjectPage() {
                           </>
                         ) : (
                           <>
-                            <Upload className="w-8 h-8 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                            <Upload className="w-8 h-8 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors" />
                             <div className="text-center">
                               <p className="font-sans text-sm text-muted-foreground">Click to upload your project document</p>
-                              <p className="font-mono text-[10px] text-muted-foreground/60 mt-1">README.md · .txt · .pdf · .docx</p>
+                              <p className="font-mono text-xs text-muted-foreground/60 mt-1">README.md · .txt · .pdf · .docx</p>
                             </div>
                           </>
                         )}
@@ -428,12 +440,12 @@ export default function DiagnoseProjectPage() {
 
                     {/* Optional text description */}
                     <div className="space-y-3">
-                      <label className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground flex items-center gap-2">
+                      <label className="font-mono text-xs tracking-widest uppercase text-muted-foreground flex items-center gap-2">
                         Project Description <span className="text-muted-foreground/40">(optional)</span>
                       </label>
                       <textarea
                         rows={4}
-                        placeholder="Describe your project in a few sentences — what it does, what tech it uses, or anything else you want the AI to know..."
+                        placeholder="Describe your project in a few sentences - what it does, what tech it uses, or anything else you want the AI to know..."
                         className="w-full bg-black/50 border border-white/10 rounded-xl py-4 px-4 font-sans text-sm outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all resize-none text-white placeholder:text-muted-foreground/40 leading-relaxed"
                         value={docDescription}
                         onChange={e => setDocDescription(e.target.value)}
@@ -441,7 +453,7 @@ export default function DiagnoseProjectPage() {
                     </div>
 
                     {docError && (
-                      <div className="flex items-center gap-2 text-critical text-[10px] font-mono p-3 bg-critical/10 rounded-lg border border-critical/20">
+                      <div className="flex items-center gap-2 text-critical text-xs font-mono p-3 bg-critical/10 rounded-lg border border-critical/20">
                         <AlertCircle className="w-3 h-3 shrink-0" />
                         {docError}
                       </div>
@@ -452,7 +464,7 @@ export default function DiagnoseProjectPage() {
                       {docLoading ? 'Analyzing Document...' : 'Start Diagnosis'}
                     </Button>
                     {manifests.length > 0 && (
-                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-white">
+                      <Button variant="ghost" onClick={e => { e.preventDefault(); setManifest(manifests[0]); fetchStatus(manifests[0].id); }} className="w-full font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-white">
                         Cancel
                       </Button>
                     )}
@@ -474,8 +486,8 @@ export default function DiagnoseProjectPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mb-2">Diagnosed Project</p>
-                      <CardTitle className="text-3xl font-sans font-light">{manifest.repo_name}</CardTitle>
+                      <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase mb-2">Diagnosed Project</p>
+                      <CardTitle className="text-3xl font-sans font-medium">{manifest.repo_name}</CardTitle>
                     </div>
                     {manifest.repo_url && (
                       <Button variant="ghost" size="icon" className="hover:bg-white/10" asChild>
@@ -486,11 +498,11 @@ export default function DiagnoseProjectPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {manifest.parsed_manifest?.languages?.map((l: string) => <Badge key={l} variant="outline" className="font-mono text-[10px] border-white/10">{l}</Badge>)}
-                    {manifest.parsed_manifest?.frameworks?.slice(0, 6).map((f: any) => <Badge key={f.name} className="bg-white/5 text-white border-white/10 font-mono text-[10px]">{f.name}</Badge>)}
+                    {manifest.parsed_manifest?.languages?.map((l: string) => <Badge key={l} variant="outline" className="font-mono text-xs border-white/10">{l}</Badge>)}
+                    {manifest.parsed_manifest?.frameworks?.slice(0, 6).map((f: any) => <Badge key={f.name} className="bg-white/5 text-white border-white/10 font-mono text-xs">{f.name}</Badge>)}
                   </div>
                   <div className="mt-8">
-                    <Button variant="outline" size="sm" className="rounded-full hover:bg-white/10 border-white/10 text-muted-foreground font-mono text-[10px]" onClick={() => setManifest(null)}>
+                    <Button variant="outline" size="sm" className="rounded-full hover:bg-white/10 border-white/10 text-muted-foreground font-mono text-xs" onClick={() => setManifest(null)}>
                       + Add Another Project
                     </Button>
                   </div>
@@ -513,7 +525,7 @@ export default function DiagnoseProjectPage() {
                         <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
                       </div>
                       <Terminal className="w-3 h-3 text-accent ml-2" />
-                      <span className="text-accent text-[10px] tracking-widest uppercase">
+                      <span className="text-accent text-xs tracking-widest uppercase">
                         {running ? 'AI Agents Running' : 'Diagnosis Complete'}
                       </span>
                       {running && <span className="ml-auto"><span className="w-1 h-1 rounded-full bg-accent animate-ping inline-block" /></span>}
@@ -530,7 +542,7 @@ export default function DiagnoseProjectPage() {
                             key={i}
                             className={cn(
                               'leading-relaxed whitespace-pre-wrap break-words',
-                              isRawSection ? 'text-yellow-400/90 mt-3 font-bold text-[10px] tracking-widest' :
+                              isRawSection ? 'text-yellow-400/90 mt-3 font-bold text-xs tracking-widest' :
                               isSuccess ? 'text-green-400/80' :
                               isError ? 'text-red-400/80' :
                               isSystem ? 'text-accent/90' :
@@ -549,36 +561,42 @@ export default function DiagnoseProjectPage() {
                 )}
               </AnimatePresence>
 
-              {/* Results — matching the alerts page exactly */}
+              {/* Results - matching the alerts page exactly */}
               <AnimatePresence>
-                {!running && alerts.length > 0 && (
+                {!running && (alerts.length > 0 || pricing) && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-4">
                       <div className="flex items-center gap-3">
                         <ShieldCheck className="w-5 h-5 text-accent" />
                         <div>
-                          <h3 className="font-sans text-xl font-light">Diagnosis Results</h3>
-                          <p className="font-mono text-[10px] text-muted-foreground uppercase mt-1">{alerts.length} issues found for {manifest.repo_name}</p>
+                          <h3 className="font-sans text-xl font-medium">Diagnosis Results</h3>
+                          <p className="font-mono text-xs text-muted-foreground uppercase mt-1">{alerts.length} issues found for {manifest.repo_name}</p>
                         </div>
                       </div>
                       <Link href="/dashboard/alerts">
-                        <Button variant="ghost" size="sm" className="font-mono text-[10px] uppercase tracking-widest hover:bg-white/10 flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="font-mono text-xs uppercase tracking-widest hover:bg-muted flex items-center gap-2">
                           Full Alerts <ChevronRight className="w-3 h-3" />
                         </Button>
                       </Link>
                     </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {alerts.map(alert => (
-                        <AlertCard key={alert.id} alert={alert} onRead={handleAlertRead} />
-                      ))}
-                    </div>
+
+                    {/* Pricing Block */}
+                    <PricingBlock pricing={pricing} projectName={manifest.repo_name} />
+
+                    {alerts.length > 0 && (
+                      <div className="grid grid-cols-1 gap-4">
+                        {alerts.map(alert => (
+                          <AlertCard key={alert.id} alert={alert} onRead={handleAlertRead} />
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 )}
                 {!running && agentLogs.length > 0 && alerts.length === 0 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center border border-white/5 rounded-2xl bg-white/2">
                     <ShieldCheck className="w-10 h-10 text-green-500 mx-auto mb-4" />
-                    <p className="font-sans text-xl font-light text-white">No issues found</p>
-                    <p className="font-mono text-[10px] text-muted-foreground uppercase mt-2">Your project looks clean. Great work!</p>
+                    <p className="font-sans text-xl font-medium text-white">No issues found</p>
+                    <p className="font-mono text-xs text-muted-foreground uppercase mt-2">Your project looks clean. Great work!</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -587,15 +605,15 @@ export default function DiagnoseProjectPage() {
             {/* Right: Agent Status */}
             <div className="space-y-6 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-white/5 pt-8 lg:pt-0 lg:pl-8">
               <div className="flex flex-col gap-4">
-                <h3 className="font-sans text-xl font-light italic">AI Agents</h3>
+                <h3 className="font-sans text-xl font-medium italic">AI Agents</h3>
                 <Button
                   onClick={runAgents}
                   disabled={running}
-                  className="w-full bg-accent text-white hover:bg-accent/90 rounded-full font-mono text-[10px] tracking-widest uppercase py-6"
+                  className="w-full bg-accent text-white hover:bg-accent/90 rounded-full font-mono text-xs tracking-widest uppercase py-6"
                 >
                   {running ? 'Scanning...' : 'Run Diagnosis'}
                 </Button>
-                <p className="font-mono text-[10px] text-muted-foreground/50 text-center">Both agents run together automatically</p>
+                <p className="font-mono text-xs text-muted-foreground/70 text-center">Both agents run together automatically</p>
               </div>
               <div className="space-y-4">
                 <AgentStatusCard label="Fuzzer" icon={Shield} color="#818cf8" run={agentRuns.fuzzer} isRunning={running} delay={0.1} />
@@ -605,10 +623,10 @@ export default function DiagnoseProjectPage() {
               {/* Tech Stack Summary */}
               {manifest.parsed_manifest && (
                 <div className="mt-8 space-y-4 border-t border-white/5 pt-6">
-                  <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">Detected Stack</p>
+                  <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">Detected Stack</p>
                   {manifest.parsed_manifest.databases?.length > 0 && (
                     <div>
-                      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/50 mb-2">Databases</p>
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/70 mb-2">Databases</p>
                       <div className="flex flex-wrap gap-1">
                         {manifest.parsed_manifest.databases.map((d: string) => <Badge key={d} variant="outline" className="text-[9px] border-white/10 font-mono">{d}</Badge>)}
                       </div>

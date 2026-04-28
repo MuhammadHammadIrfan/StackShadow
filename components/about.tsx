@@ -31,7 +31,7 @@ export function About() {
         transition={{ duration: 0.8 }}
         className="px-8 md:px-12 mb-0 py-20"
       >
-        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground mb-4">03 — PHILOSOPHY</p>
+        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground mb-4">03 - PHILOSOPHY</p>
         <h2 className="font-sans text-3xl md:text-5xl font-light italic">Autonomous Intelligence</h2>
       </motion.div>
 

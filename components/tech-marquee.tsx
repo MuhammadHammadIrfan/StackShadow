@@ -79,7 +79,7 @@ export function TechMarquee() {
         transition={{ duration: 0.8 }}
         className="px-8 md:px-12 mb-16"
       >
-        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground mb-4">05 — TECHNICAL ARSENAL</p>
+        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground mb-4">05 - TECHNICAL ARSENAL</p>
       </motion.div>
 
       {/* Marquee Rows */}

@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'StackShadow — Personal Technical Intelligence Layer',
+  title: 'StackShadow - Personal Technical Intelligence Layer',
   description:
-    'An AI-powered system that monitors your startup\'s tech stack for security vulnerabilities, model pricing changes, and framework deprecations — so you can focus on shipping.',
+    'An AI-powered system that monitors your startup\'s tech stack for security vulnerabilities, model pricing changes, and framework deprecations - so you can focus on shipping.',
   keywords: ['AI', 'security', 'startup', 'tech stack', 'vulnerability', 'monitoring'],
 };
 

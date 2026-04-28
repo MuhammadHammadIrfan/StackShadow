@@ -63,7 +63,7 @@ export function Works() {
         transition={{ duration: 0.8 }}
         className="mb-24"
       >
-        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground mb-4">04 — SYSTEM AGENTS</p>
+        <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground mb-4">04 - SYSTEM AGENTS</p>
         <h2 className="font-sans text-3xl md:text-5xl font-light italic">The Intelligence Layer</h2>
       </motion.div>
 
