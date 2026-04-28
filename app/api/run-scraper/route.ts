@@ -93,12 +93,12 @@ async function tavilySearch(query: string): Promise<TavilyResult[]> {
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
-  let log: (msg: string) => void = () => {};
+  let log: (msg: string) => void = () => { };
 
   const stream = new ReadableStream({
     async start(controller) {
       log = (msg: string) => {
-        try { controller.enqueue(encodeEvent(msg)); } catch {}
+        try { controller.enqueue(encodeEvent(msg)); } catch { }
       };
 
       try {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         try {
           const body = await request.json();
           manifest_id = body.manifest_id;
-        } catch {}
+        } catch { }
 
         const supabase = await createClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -149,41 +149,53 @@ export async function POST(request: NextRequest) {
 
           for (const m of aiModels.slice(0, 4)) {
             const name = `${m.provider} ${m.model}`;
-            subjects.push({ name, type: 'ai_model', queries: [
-              `${name} pricing change 2025`,
-              `${name} deprecated alternative`,
-            ]});
+            subjects.push({
+              name, type: 'ai_model', queries: [
+                `${name} pricing change 2025`,
+                `${name} deprecated alternative`,
+              ]
+            });
           }
 
           for (const fw of frameworks.slice(0, 4)) {
-            subjects.push({ name: fw.name, type: 'framework', queries: [
-              `${fw.name} new release breaking changes 2025`,
-              `${fw.name} deprecation notice`,
-            ]});
+            subjects.push({
+              name: fw.name, type: 'framework', queries: [
+                `${fw.name} new release breaking changes 2025`,
+                `${fw.name} deprecation notice`,
+              ]
+            });
           }
 
           // Fallback: if no ai_models/frameworks, search top deps, languages, dbs
           if (subjects.length === 0) {
             for (const dep of keyDeps.slice(0, 4)) {
-              subjects.push({ name: dep.name, type: 'dependency', queries: [
-                `${dep.name} security advisory 2025`,
-                `${dep.name} breaking change deprecated`,
-              ]});
+              subjects.push({
+                name: dep.name, type: 'dependency', queries: [
+                  `${dep.name} security advisory 2025`,
+                  `${dep.name} breaking change deprecated`,
+                ]
+              });
             }
             for (const lang of languages.slice(0, 2)) {
-              subjects.push({ name: lang, type: 'language', queries: [
-                `${lang} new features deprecation 2025`,
-              ]});
+              subjects.push({
+                name: lang, type: 'language', queries: [
+                  `${lang} new features deprecation 2025`,
+                ]
+              });
             }
             for (const db of databases.slice(0, 2)) {
-              subjects.push({ name: db, type: 'database', queries: [
-                `${db} pricing change deprecation 2025`,
-              ]});
+              subjects.push({
+                name: db, type: 'database', queries: [
+                  `${db} pricing change deprecation 2025`,
+                ]
+              });
             }
             for (const infra of infrastructure.slice(0, 2)) {
-              subjects.push({ name: infra, type: 'infrastructure', queries: [
-                `${infra} breaking change pricing 2025`,
-              ]});
+              subjects.push({
+                name: infra, type: 'infrastructure', queries: [
+                  `${infra} breaking change pricing 2025`,
+                ]
+              });
             }
           }
 

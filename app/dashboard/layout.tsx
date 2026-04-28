@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -12,7 +13,9 @@ import {
   User as UserIcon,
   ListTodo,
   Calendar as CalendarIcon,
-  Hexagon
+  Hexagon,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -30,8 +33,12 @@ const NAV_LINKS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -54,22 +61,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-white font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-background text-foreground font-sans overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-72 border-r border-white/5 bg-[#0a0a0a]/50 backdrop-blur-xl flex flex-col p-6 fixed h-screen z-50">
-        <div className="flex items-center gap-3 px-2 mb-12">
-          <div className="relative">
-            <Hexagon className="w-8 h-8 text-accent fill-accent/10" />
-            <div className="absolute inset-0 bg-accent/20 blur-lg rounded-full" />
+      <aside className="w-72 border-r border-border/50 bg-card/50 backdrop-blur-xl flex flex-col p-6 fixed h-screen z-50">
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center gap-3 px-2">
+            <div className="relative">
+              <Hexagon className="w-8 h-8 text-accent fill-accent/10" />
+              <div className="absolute inset-0 bg-accent/20 blur-lg rounded-full" />
+            </div>
+            <span className="font-sans text-lg font-light tracking-tight">Stack<span className="italic opacity-50">Shadow</span></span>
           </div>
-          <span className="font-sans text-lg font-light tracking-tight">Stack<span className="italic opacity-50">Shadow</span></span>
+          {/* Theme Toggle */}
+          {mounted && (
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-xl border border-border/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          )}
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -84,7 +103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
                   isActive 
                     ? "bg-accent/10 text-accent" 
-                    : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <Icon className={cn(
@@ -104,9 +123,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User profile */}
-        <div className="mt-auto pt-6 border-t border-white/5">
+        <div className="mt-auto pt-6 border-t border-border/50">
           <div className="flex items-center gap-4 p-2 mb-4">
-            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-mono text-xs">
+            <div className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center font-mono text-xs">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
@@ -117,7 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Button 
             variant="ghost" 
             onClick={handleSignOut}
-            className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5"
+            className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <LogOut className="w-4 h-4" />
             <span className="font-mono text-[10px] tracking-widest uppercase">Sign Out</span>
@@ -135,3 +154,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
+

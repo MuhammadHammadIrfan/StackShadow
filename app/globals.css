@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Dark portfolio theme - using dark mode as default */
+/* Dark theme (default) */
 :root {
   --background: oklch(0.05 0 0);
   --foreground: oklch(0.985 0 0);
@@ -35,6 +35,55 @@
 
   --agent-fuzzer: oklch(0.6 0.2 280);
   --agent-scraper: oklch(0.6 0.2 180);
+
+  /* Surface helpers */
+  --surface-bg: #050505;
+  --surface-sidebar: rgba(10, 10, 10, 0.5);
+  --surface-border: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --surface-card: rgba(255, 255, 255, 0.05);
+  --surface-text: #ffffff;
+  --surface-text-secondary: rgba(255, 255, 255, 0.5);
+}
+
+/* Light theme */
+.light {
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(0.97 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(0.97 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.93 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.93 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: oklch(0.546 0.245 262.881);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.88 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.7 0 0);
+
+  --critical: oklch(0.5 0.2 25);
+  --high: oklch(0.55 0.2 45);
+  --medium: oklch(0.7 0.15 85);
+  --low: oklch(0.55 0.15 250);
+  --info: oklch(0.6 0.05 250);
+
+  --agent-fuzzer: oklch(0.5 0.2 280);
+  --agent-scraper: oklch(0.5 0.2 180);
+
+  --surface-bg: #fafafa;
+  --surface-sidebar: rgba(245, 245, 245, 0.8);
+  --surface-border: rgba(0, 0, 0, 0.08);
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-card: rgba(0, 0, 0, 0.03);
+  --surface-text: #111111;
+  --surface-text-secondary: rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
