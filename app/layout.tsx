@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${outfit.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <body className="font-sans antialiased overflow-x-hidden">
+      <body className="font-sans antialiased overflow-x-hidden" suppressHydrationWarning={true}>
         <div className="noise-overlay" />
         <ThemeProvider>
           {children}
