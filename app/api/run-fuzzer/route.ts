@@ -13,7 +13,7 @@ function sseEnd(controller: ReadableStreamDefaultController) {
   controller.close();
 }
 
-// ── LLM fallback chain ───────────────────────────────────────────────────────
+// ── LLM fallback chain ───────────────────────────────────────────────────────-
 async function generateWithFallback(
   genai: GoogleGenAI,
   prompt: string,
@@ -179,12 +179,12 @@ function mapSeverity(vuln: OsvVulnerability): AlertSeverity {
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
-  let log: (msg: string) => void = () => {};
+  let log: (msg: string) => void = () => { };
 
   const stream = new ReadableStream({
     async start(controller) {
       log = (msg: string) => {
-        try { controller.enqueue(encodeEvent(msg)); } catch {}
+        try { controller.enqueue(encodeEvent(msg)); } catch { }
       };
 
       try {
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         try {
           const body = await request.json();
           manifest_id = body.manifest_id;
-        } catch {}
+        } catch { }
 
         const supabase = await createClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
