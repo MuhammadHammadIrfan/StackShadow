@@ -77,4 +77,4 @@ Google Cloud Run automatically builds the Next.js application from source using 
 4. Deploy.
 
 ---
-*Built for the Google AI Hackathon.*
+*Built for the Google AI Hackathon. *
